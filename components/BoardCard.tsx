@@ -1,31 +1,40 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Board } from "@/types";
 import { Globe, Link as LinkIcon, Lock, Settings } from "lucide-react";
 
 const MODE_LABELS = { free: "Free canvas", grid: "Grid", ruled: "Ruled lines" };
-const VIS_ICONS = { public: Globe, link: LinkIcon, private: Lock };
-const VIS_COLORS = { public: "var(--sticky-g)", link: "var(--sticky-b)", private: "var(--sticky-p)" };
+const VIS_ICONS   = { public: Globe, link: LinkIcon, private: Lock };
+const VIS_COLORS  = { public: "var(--sticky-g)", link: "var(--sticky-b)", private: "var(--sticky-p)" };
 const CARD_COLORS = ["sn-y", "sn-b", "sn-p", "sn-g", "sn-o"];
 const CARD_ROTS   = ["-1.5deg", "1deg", "-0.8deg", "1.5deg", "-1deg"];
 const TAPE_COLORS = ["y", "b", "p", "g", "o"];
 
 export default function BoardCard({ board, index }: { board: Board; index: number }) {
-  const VIcon = VIS_ICONS[board.visibility];
-  const rot   = CARD_ROTS[index % CARD_ROTS.length];
+  const router = useRouter();
+  const VIcon  = VIS_ICONS[board.visibility];
+  const rot    = CARD_ROTS[index % CARD_ROTS.length];
+  const color  = CARD_COLORS[index % CARD_COLORS.length];
 
   return (
     <div style={{ position: "relative" }}>
+      {/* Tape */}
       <span
         className={`tape tape-${TAPE_COLORS[index % TAPE_COLORS.length]}`}
         style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 52, height: 16, borderRadius: 2, zIndex: 10 }}
       />
-      <Link
-        href={`/board/${board.slug}`}
-        className={`sk ${CARD_COLORS[index % CARD_COLORS.length]}`}
+
+      {/* Clickable card div — navigates to board */}
+      <div
+        role="link"
+        tabIndex={0}
+        onClick={() => router.push(`/board/${board.slug}`)}
+        onKeyDown={e => e.key === "Enter" && router.push(`/board/${board.slug}`)}
+        className={`sk ${color}`}
         style={{
           display: "block", padding: "22px 18px 18px",
-          textDecoration: "none", position: "relative",
+          cursor: "pointer", position: "relative",
           transform: `rotate(${rot})`,
           transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s",
         }}
@@ -59,19 +68,20 @@ export default function BoardCard({ board, index }: { board: Board; index: numbe
                 {MODE_LABELS[board.mode]}
               </span>
             </div>
-            {/* Settings link — stops card link propagation */}
-            <Link
+
+            {/* Settings — plain <a>, sibling to card content, stops card click */}
+            <a
               href={`/board/${board.slug}/settings`}
               onClick={e => e.stopPropagation()}
-              style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 8px", background: "rgba(255,255,255,0.7)", border: "1px solid rgba(28,28,28,0.15)", fontFamily: "var(--font-kalam), serif", fontSize: "0.75rem", color: "var(--ink2)", textDecoration: "none", transition: "color 0.15s, border-color 0.15s" }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 9px", background: "rgba(255,255,255,0.75)", border: "1px solid rgba(28,28,28,0.18)", fontFamily: "var(--font-kalam), serif", fontSize: "0.75rem", color: "var(--ink2)", textDecoration: "none", transition: "color 0.15s, border-color 0.15s" }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--ink)"; (e.currentTarget as HTMLElement).style.borderColor = "var(--ink)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--ink2)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(28,28,28,0.15)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--ink2)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(28,28,28,0.18)"; }}
             >
               <Settings size={11} /> Settings
-            </Link>
+            </a>
           </div>
         </div>
-      </Link>
+      </div>
     </div>
   );
 }
