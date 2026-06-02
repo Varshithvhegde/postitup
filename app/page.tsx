@@ -1,65 +1,106 @@
-import Image from "next/image";
+"use client";
+import Link from "next/link";
+import { StickyNote, Users, Zap, Code2, ArrowRight } from "lucide-react";
 
-export default function Home() {
+export default function LandingPage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-screen overflow-x-hidden" style={{ background: "var(--paper)" }}>
+      {/* SVG roughen filter */}
+      <svg style={{ display: "none", position: "absolute" }} aria-hidden>
+        <defs>
+          <filter id="roughen" x="-5%" y="-5%" width="110%" height="110%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" seed="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+      </svg>
+
+      {/* Dot grid background */}
+      <div className="fixed inset-0 bg-dot-grid -z-10" />
+
+      {/* Nav */}
+      <nav className="sticky top-0 z-50" style={{ borderBottom: "1.5px solid rgba(28,28,28,0.12)", background: "rgba(250,249,246,0.92)", backdropFilter: "blur(6px)" }}>
+        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+          <span style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "1.4rem", fontWeight: 700, color: "var(--ink)" }}>
+            PostItUp 📌
+          </span>
+          <div className="flex items-center gap-4">
+            <Link href="/auth/login" style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink2)", textDecoration: "none" }}>
+              Sign in
+            </Link>
+            <Link href="/auth/signup" className="sk" style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", padding: "6px 18px", color: "var(--ink)", textDecoration: "none", background: "var(--sticky-y)", position: "relative" }}>
+              <div className="sk-b" />
+              <span className="sk-i">Get started →</span>
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </nav>
+
+      {/* Hero */}
+      <section className="max-w-4xl mx-auto px-6 pt-20 pb-16 text-center">
+        <div className="relative inline-block mb-6">
+          <span className="tape tape-p" style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 64, height: 18, borderRadius: 2 }} />
+          <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "var(--ink3)", letterSpacing: "0.1em", textTransform: "uppercase" }}>collaborative boards</span>
         </div>
-      </main>
-    </div>
+
+        <h1 style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "clamp(2.4rem,7vw,4.2rem)", fontWeight: 400, color: "var(--ink)", lineHeight: 1.1, marginBottom: 16 }}>
+          Your team&apos;s ideas,<br />pinned together.
+        </h1>
+
+        <svg width="340" height="14" viewBox="0 0 340 14" preserveAspectRatio="none" className="mx-auto mb-6" style={{ display: "block" }} aria-hidden>
+          <path d="M0,9 C40,3 80,12 120,7 C160,2 200,11 240,7 C280,3 315,10 340,7"
+            stroke="var(--ink)" strokeWidth="2" fill="none" strokeLinecap="round" style={{ transform: "scaleX(1)", transformOrigin: "left" }} />
+        </svg>
+
+        <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1.15rem", color: "var(--ink2)", maxWidth: 540, margin: "0 auto 32px", lineHeight: 1.7 }}>
+          Create sticky note boards for retros, feedback, brainstorming — real-time, embeddable, and delightfully paper-like.
+        </p>
+
+        <div className="flex flex-wrap gap-3 justify-center">
+          <Link href="/auth/signup" className="sk" style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1.1rem", padding: "12px 28px", background: "var(--ink)", color: "white", textDecoration: "none", position: "relative", display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <div className="sk-b" />
+            <span className="sk-i flex items-center gap-2" style={{ color: "white" }}>Create a board <ArrowRight size={16} /></span>
+          </Link>
+          <Link href="/board/demo" className="sk" style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1.1rem", padding: "12px 28px", background: "var(--sticky-b)", color: "var(--ink)", textDecoration: "none", position: "relative" }}>
+            <div className="sk-b" />
+            <span className="sk-i">Try demo board</span>
+          </Link>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="max-w-5xl mx-auto px-6 pb-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {[
+            { Icon: StickyNote, color: "sn-y", tape: "tape-y", rot: "-1.5deg", title: "Three canvas modes", desc: "Free-drag, ruled lines, or grid snap — owner picks the feel for their board." },
+            { Icon: Users,      color: "sn-b", tape: "tape-b", rot: "1deg",    title: "Real-time collab",  desc: "Notes appear live for everyone on the board, no refresh needed." },
+            { Icon: Zap,        color: "sn-p", tape: "tape-p", rot: "-0.8deg", title: "Anonymous posting", desc: "No sign-in needed to drop a note on a public or link board." },
+            { Icon: Code2,      color: "sn-g", tape: "tape-g", rot: "1.5deg",  title: "Embeddable",        desc: "Drop any board into your site with one iframe line. npm package coming soon." },
+          ].map(({ Icon, color, tape, rot, title, desc }) => (
+            <div key={title} style={{ position: "relative" }}>
+              <span className={`tape ${tape}`} style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 52, height: 16, borderRadius: 2, zIndex: 10 }} />
+              <div className={`sk ${color}`} style={{ padding: "24px 18px 20px", position: "relative", transform: `rotate(${rot})`, transition: "transform 0.2s" }}
+                onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.transform = "rotate(0deg) translateY(-4px)"}
+                onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.transform = `rotate(${rot})`}
+              >
+                <div className="sk-b" />
+                <div className="sk-i">
+                  <Icon size={22} style={{ color: "var(--ink)", marginBottom: 10 }} />
+                  <h3 style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "1.05rem", fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>{title}</h3>
+                  <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink2)", lineHeight: 1.6 }}>{desc}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer style={{ borderTop: "1.5px solid rgba(28,28,28,0.1)", padding: "20px 24px", textAlign: "center" }}>
+        <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "var(--ink3)" }}>
+          ✏️ PostItUp — built with paper &amp; code
+        </p>
+      </footer>
+    </main>
   );
 }

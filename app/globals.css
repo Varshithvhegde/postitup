@@ -1,26 +1,112 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper:    #faf9f6;
+  --paper2:   #f2ede4;
+  --ink:      #1c1c1c;
+  --ink2:     #5a5850;
+  --ink3:     #aaa89e;
+  --tape-y:   rgba(253,224, 71,0.72);
+  --tape-p:   rgba(249,168,212,0.72);
+  --tape-b:   rgba(147,197,253,0.72);
+  --tape-g:   rgba(134,239,172,0.72);
+  --tape-o:   rgba(253,186,116,0.72);
+  --sticky-y: #fef9c3;
+  --sticky-p: #fce7f3;
+  --sticky-b: #dbeafe;
+  --sticky-g: #dcfce7;
+  --sticky-o: #ffedd5;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+html, body { height: 100%; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-kalam), Georgia, serif;
+  font-size: 16px;
+  line-height: 1.5;
 }
+
+/* ── Paper card ── */
+.sk {
+  position: relative;
+  background: white;
+  box-shadow: 3px 4px 0 rgba(28,28,28,0.12), 1px 2px 8px rgba(0,0,0,0.06);
+}
+.sk-b {
+  position: absolute; inset: 0;
+  border: 1.8px solid var(--ink);
+  pointer-events: none; z-index: 2;
+  background: transparent;
+}
+.sk-i { position: relative; z-index: 3; }
+
+/* ── Tape ── */
+.tape {
+  display: block; position: absolute;
+  pointer-events: none; z-index: 10;
+  mix-blend-mode: multiply;
+  background-image: repeating-linear-gradient(
+    90deg, transparent 0, transparent 3px,
+    rgba(255,255,255,0.18) 3px, rgba(255,255,255,0.18) 4px
+  );
+}
+.tape-y { background-color: var(--tape-y); }
+.tape-p { background-color: var(--tape-p); }
+.tape-b { background-color: var(--tape-b); }
+.tape-g { background-color: var(--tape-g); }
+.tape-o { background-color: var(--tape-o); }
+
+.sn-y { background: var(--sticky-y); }
+.sn-p { background: var(--sticky-p); }
+.sn-b { background: var(--sticky-b); }
+.sn-g { background: var(--sticky-g); }
+.sn-o { background: var(--sticky-o); }
+
+/* ── Canvas backgrounds ── */
+.bg-dot-grid {
+  background-color: var(--paper);
+  background-image: radial-gradient(circle, #c8c4ba 1.2px, transparent 1.2px);
+  background-size: 24px 24px;
+}
+.bg-ruled {
+  background-color: var(--paper);
+  background-image: repeating-linear-gradient(
+    transparent, transparent 31px, #ccc9bc 31px, #ccc9bc 32px
+  );
+  background-position: 0 8px;
+}
+.bg-grid {
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(rgba(180,175,165,0.45) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(180,175,165,0.45) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* ── Note drop animation ── */
+@keyframes note-drop {
+  0%   { opacity: 0; transform: translateY(-16px) rotate(var(--rot,0deg)) scale(0.95); }
+  65%  { opacity: 1; transform: translateY(3px)  rotate(var(--rot,0deg)) scale(1.01); }
+  100% { opacity: 1; transform: translateY(0)    rotate(var(--rot,0deg)) scale(1); }
+}
+.note-enter {
+  animation: note-drop 0.38s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+/* ── Scrawl underline ── */
+.draw-line { transform-origin: left; transform: scaleX(0); }
+.draw-line.drawn {
+  animation: scrawl 0.5s cubic-bezier(0.22,1,0.36,1) 200ms both;
+}
+@keyframes scrawl {
+  from { transform: scaleX(0); transform-origin: left; }
+  to   { transform: scaleX(1); transform-origin: left; }
+}
+
+input, textarea, select, button { font-family: inherit; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--paper2); }
+::-webkit-scrollbar-thumb { background: var(--ink3); border-radius: 3px; }
