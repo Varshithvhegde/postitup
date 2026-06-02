@@ -10,11 +10,13 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!agreed) { setError("You must agree to the Terms of Service and Privacy Policy to continue."); return; }
     setError("");
     setLoading(true);
     const supabase = createClient();
@@ -57,9 +59,25 @@ export default function SignupPage() {
                   </div>
                 </label>
               ))}
+              {/* Terms agreement */}
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={e => { setAgreed(e.target.checked); setError(""); }}
+                  style={{ marginTop: 3, width: 16, height: 16, flexShrink: 0, cursor: "pointer", accentColor: "var(--ink)" }}
+                />
+                <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.88rem", color: "var(--ink2)", lineHeight: 1.5 }}>
+                  I agree to the{" "}
+                  <Link href="/legal/terms" target="_blank" style={{ color: "var(--ink)", fontWeight: 700, textDecoration: "none" }}>Terms of Service</Link>
+                  {" "}and{" "}
+                  <Link href="/legal/privacy" target="_blank" style={{ color: "var(--ink)", fontWeight: 700, textDecoration: "none" }}>Privacy Policy</Link>
+                </span>
+              </label>
+
               {error && <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "#ef4444" }}>{error}</p>}
-              <button type="submit" disabled={loading}
-                style={{ padding: "11px", background: "var(--ink)", color: "white", border: "none", cursor: loading ? "default" : "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", opacity: loading ? 0.7 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <button type="submit" disabled={loading || !agreed}
+                style={{ padding: "11px", background: "var(--ink)", color: "white", border: "none", cursor: loading || !agreed ? "default" : "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", opacity: loading || !agreed ? 0.45 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                 {loading ? "Creating account…" : <><span>Create account</span><ArrowRight size={16} /></>}
               </button>
             </form>
@@ -75,6 +93,12 @@ export default function SignupPage() {
               <div className="sk-b" />
               <span className="sk-i">Continue with GitHub</span>
             </button>
+            <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: "var(--ink3)", marginTop: 8, textAlign: "center", lineHeight: 1.5 }}>
+              By continuing with GitHub you agree to our{" "}
+              <Link href="/legal/terms" target="_blank" style={{ color: "var(--ink2)", textDecoration: "underline" }}>Terms</Link>
+              {" "}&amp;{" "}
+              <Link href="/legal/privacy" target="_blank" style={{ color: "var(--ink2)", textDecoration: "underline" }}>Privacy Policy</Link>
+            </p>
 
             <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink2)", marginTop: 20, textAlign: "center" }}>
               Have an account? <Link href="/auth/login" style={{ color: "var(--ink)", fontWeight: 700, textDecoration: "none" }}>Sign in →</Link>
