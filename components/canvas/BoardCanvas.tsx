@@ -243,10 +243,17 @@ export default function BoardCanvas({ board, initialNotes, currentUser, isOwner 
           </button>
 
           {isOwner && (
-            <button onClick={() => setShowSettings(s => !s)}
-              style={{ padding: "6px 10px", background: showSettings ? "var(--sticky-y)" : "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", cursor: "pointer", color: "var(--ink)", display: "flex", alignItems: "center" }}>
-              <Settings size={16} />
-            </button>
+            <>
+              <a href={`/board/${board.slug}/settings`}
+                style={{ padding: "6px 12px", background: "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", cursor: "pointer", color: "var(--ink2)", display: "flex", alignItems: "center", gap: 5, textDecoration: "none", fontFamily: "var(--font-kalam), serif", fontSize: "0.88rem" }}>
+                <Settings size={14} /> Settings
+              </a>
+              <button onClick={() => setShowSettings(s => !s)}
+                style={{ padding: "6px 10px", background: showSettings ? "var(--sticky-b)" : "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", cursor: "pointer", color: "var(--ink)", display: "flex", alignItems: "center" }}
+                title="Embed code">
+                <LinkIcon size={15} />
+              </button>
+            </>
           )}
         </div>
       </div>
