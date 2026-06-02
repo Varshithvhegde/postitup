@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import type { Board, BoardMode, BoardVisibility } from "@/types";
+import { sanitizeText, validateBoardTitle, LIMITS } from "@/lib/sanitize";
 import { Trash2, ChevronLeft, Save, AlertTriangle } from "lucide-react";
 
 const MODES: { value: BoardMode; label: string; desc: string }[] = [
@@ -41,12 +42,15 @@ export default function BoardSettings({ board }: { board: Board }) {
     setError("");
     setSaved(false);
 
+    const titleErr = validateBoardTitle(title);
+    if (titleErr) { setError(titleErr); setSaving(false); return; }
+
     const { error } = await supabase
       .from("boards")
       .update({
-        title: title.trim(),
-        description: description.trim() || null,
-        prompt: prompt.trim() || null,
+        title:       sanitizeText(title),
+        description: description.trim() ? sanitizeText(description).slice(0, LIMITS.boardDesc.max) : null,
+        prompt:      prompt.trim()      ? sanitizeText(prompt).slice(0, LIMITS.boardPrompt.max)    : null,
         mode,
         visibility,
         updated_at: new Date().toISOString(),

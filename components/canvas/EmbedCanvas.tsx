@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Board, Note, NoteColor } from "@/types";
+import { sanitizeText, validateNoteContent, validateAuthorName, LIMITS } from "@/lib/sanitize";
 import { Plus, X, ThumbsUp, Trash2 } from "lucide-react";
 
 const COLORS: { value: NoteColor; bg: string; tape: string }[] = [
@@ -101,19 +102,29 @@ export default function EmbedCanvas({ board, initialNotes, currentUser }: Props)
     if (e.ctrlKey || e.metaKey) { e.preventDefault(); setScale(s => Math.min(2, Math.max(0.4, s - e.deltaY * 0.001))); }
   }, []);
 
+  const [addError, setAddError] = useState("");
   const addNote = async () => {
-    if (!newText.trim()) return;
-    const name = authorName.trim() || "Anonymous";
-    localStorage.setItem("piu_name", name);
-    await supabase.from("notes").insert({ board_id: board.id, content: newText.trim(), color: newColor, x: addPos.x, y: addPos.y, width: 200, rotation: randRot(), author_name: name, user_id: currentUser?.id ?? null });
+    setAddError("");
+    const contentErr = validateNoteContent(newText);
+    if (contentErr) { setAddError(contentErr); return; }
+    const nameErr = validateAuthorName(authorName);
+    if (nameErr) { setAddError(nameErr); return; }
+    const cleanContent = sanitizeText(newText);
+    const cleanName    = sanitizeText(authorName) || "Anonymous";
+    localStorage.setItem("piu_name", cleanName);
+    const { error } = await supabase.from("notes").insert({ board_id: board.id, content: cleanContent, color: newColor, x: addPos.x, y: addPos.y, width: 200, rotation: randRot(), author_name: cleanName, user_id: currentUser?.id ?? null });
+    if (error) { setAddError("Failed to save. Try again."); return; }
     setNewText(""); setShowAdd(false);
   };
 
   const upvote = async (note: Note) => {
     const fp = getFingerprint();
     if (voted.has(note.id)) return;
-    const { error } = await supabase.from("note_votes").insert({ note_id: note.id, voter_fingerprint: fp });
-    if (!error) { setVoted(v => new Set([...v, note.id])); await supabase.from("notes").update({ upvotes: note.upvotes + 1 }).eq("id", note.id); }
+    const { data } = await supabase.rpc("increment_upvote", { note_id: note.id, voter_fp: fp });
+    if (data?.success) {
+      setVoted(v => new Set([...v, note.id]));
+      setNotes(ns => ns.map(n => n.id === note.id ? { ...n, upvotes: data.upvotes } : n));
+    }
   };
 
   return (

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import type { BoardMode, BoardVisibility } from "@/types";
+import { sanitizeText, validateBoardTitle, LIMITS } from "@/lib/sanitize";
 
 function slugify(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) + "-" + Math.random().toString(36).slice(2, 6);
@@ -33,18 +34,20 @@ export default function NewBoardPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    const titleErr = validateBoardTitle(title);
+    if (titleErr) { setError(titleErr); return; }
     setLoading(true);
     setError("");
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push("/auth/login"); return; }
 
-    const slug = slugify(title);
+    const cleanTitle = sanitizeText(title);
+    const slug = slugify(cleanTitle);
     const { data, error } = await supabase.from("boards").insert({
-      title: title.trim(),
-      description: description.trim() || null,
-      prompt: prompt.trim() || null,
+      title: cleanTitle,
+      description: description.trim() ? sanitizeText(description).slice(0, LIMITS.boardDesc.max) : null,
+      prompt: prompt.trim() ? sanitizeText(prompt).slice(0, LIMITS.boardPrompt.max) : null,
       slug, mode, visibility,
       owner_id: user.id,
     }).select().single();

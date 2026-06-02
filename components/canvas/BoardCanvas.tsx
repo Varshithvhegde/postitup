@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Board, Note, NoteColor } from "@/types";
+import { sanitizeText, validateNoteContent, validateAuthorName, LIMITS } from "@/lib/sanitize";
 import {
   Plus, X, ThumbsUp, Trash2, Link as LinkIcon,
   Settings, ChevronLeft, Copy, Check,
@@ -151,22 +152,30 @@ export default function BoardCanvas({ board, initialNotes, currentUser, isOwner 
   }, [pan, scale, board.mode]);
 
   /* ── Add note ── */
+  const [addError, setAddError] = useState("");
   const addNote = async () => {
-    if (!newText.trim()) return;
-    const name = authorName.trim() || "Anonymous";
-    localStorage.setItem("piu_name", name);
-    const note = {
-      board_id: board.id,
-      content: newText.trim(),
-      color: newColor,
-      x: addPos.x,
-      y: addPos.y,
-      width: 200,
-      rotation: randRot(),
-      author_name: name,
-      user_id: currentUser?.id ?? null,
-    };
-    await supabase.from("notes").insert(note);
+    setAddError("");
+    const contentErr = validateNoteContent(newText);
+    if (contentErr) { setAddError(contentErr); return; }
+    const nameErr = validateAuthorName(authorName);
+    if (nameErr) { setAddError(nameErr); return; }
+
+    const cleanContent = sanitizeText(newText);
+    const cleanName    = sanitizeText(authorName) || "Anonymous";
+    localStorage.setItem("piu_name", cleanName);
+
+    const { error } = await supabase.from("notes").insert({
+      board_id:    board.id,
+      content:     cleanContent,
+      color:       newColor,
+      x:           addPos.x,
+      y:           addPos.y,
+      width:       200,
+      rotation:    randRot(),
+      author_name: cleanName,
+      user_id:     currentUser?.id ?? null,
+    });
+    if (error) { setAddError("Failed to save note. Try again."); return; }
     setNewText("");
     setShowAddForm(false);
   };
@@ -176,14 +185,14 @@ export default function BoardCanvas({ board, initialNotes, currentUser, isOwner 
     await supabase.from("notes").delete().eq("id", id);
   };
 
-  /* ── Upvote ── */
+  /* ── Upvote — calls secure DB function, never touches upvotes column directly ── */
   const upvote = async (note: Note) => {
     const fp = getFingerprint();
     if (voted.has(note.id)) return;
-    const { error } = await supabase.from("note_votes").insert({ note_id: note.id, voter_fingerprint: fp });
-    if (!error) {
+    const { data } = await supabase.rpc("increment_upvote", { note_id: note.id, voter_fp: fp });
+    if (data?.success) {
       setVoted(v => new Set([...v, note.id]));
-      await supabase.from("notes").update({ upvotes: note.upvotes + 1 }).eq("id", note.id);
+      setNotes(ns => ns.map(n => n.id === note.id ? { ...n, upvotes: data.upvotes } : n));
     }
   };
 
@@ -365,19 +374,25 @@ export default function BoardCanvas({ board, initialNotes, currentUser, isOwner 
                 </div>
 
                 {/* Author name */}
-                <input value={authorName} onChange={e => setAuthorName(e.target.value)} placeholder="Your name (optional)"
+                <input value={authorName} onChange={e => setAuthorName(e.target.value.slice(0, LIMITS.authorName.max))} placeholder="Your name (optional)"
                   style={{ width: "100%", padding: "7px 10px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink)", outline: "none", marginBottom: 10 }} />
 
-                {/* Note text */}
-                <textarea
-                  autoFocus
-                  value={newText}
-                  onChange={e => setNewText(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && e.metaKey) addNote(); }}
-                  placeholder="Write your note…"
-                  rows={4}
-                  style={{ width: "100%", padding: "10px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink)", outline: "none", resize: "vertical", marginBottom: 14 }}
-                />
+                {/* Note text + char counter */}
+                <div style={{ position: "relative", marginBottom: 14 }}>
+                  <textarea
+                    autoFocus
+                    value={newText}
+                    onChange={e => { setAddError(""); setNewText(e.target.value.slice(0, LIMITS.noteContent.max)); }}
+                    onKeyDown={e => { if (e.key === "Enter" && e.metaKey) addNote(); }}
+                    placeholder="Write your note…"
+                    rows={4}
+                    style={{ width: "100%", padding: "10px", border: `1.5px solid ${newText.length >= LIMITS.noteContent.max ? "#ef4444" : "rgba(28,28,28,0.2)"}`, background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink)", outline: "none", resize: "vertical" }}
+                  />
+                  <span style={{ position: "absolute", bottom: 6, right: 8, fontFamily: "var(--font-kalam), serif", fontSize: "0.7rem", color: newText.length >= LIMITS.noteContent.max ? "#ef4444" : "var(--ink3)" }}>
+                    {newText.length}/{LIMITS.noteContent.max}
+                  </span>
+                </div>
+                {addError && <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "#ef4444", marginBottom: 10 }}>{addError}</p>}
 
                 {/* Color picker */}
                 <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
