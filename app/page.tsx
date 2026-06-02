@@ -96,7 +96,18 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer style={{ borderTop: "1.5px solid rgba(28,28,28,0.1)", padding: "20px 24px", textAlign: "center" }}>
+      <footer style={{ borderTop: "1.5px solid rgba(28,28,28,0.1)", padding: "24px", textAlign: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: 24, flexWrap: "wrap", marginBottom: 10 }}>
+          {[
+            { label: "Privacy Policy", href: "/legal/privacy" },
+            { label: "Terms of Service", href: "/legal/terms" },
+            { label: "Cookie Policy", href: "/legal/cookies" },
+          ].map(({ label, href }) => (
+            <Link key={href} href={href} style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "var(--ink3)", textDecoration: "none" }}>
+              {label}
+            </Link>
+          ))}
+        </div>
         <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "var(--ink3)" }}>
           ✏️ PostItUp — built with paper &amp; code
         </p>

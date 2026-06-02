@@ -28,6 +28,7 @@ export default async function DashboardPage() {
           </Link>
           <div className="flex items-center gap-4">
             <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink2)" }}>{user.email}</span>
+            <Link href="/account" style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink2)", textDecoration: "none" }}>Account</Link>
             <form action="/auth/signout" method="post">
               <button type="submit" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink2)", display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem" }}>
                 <LogOut size={15} /> Sign out
