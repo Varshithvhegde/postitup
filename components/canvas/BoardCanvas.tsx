@@ -182,6 +182,8 @@ export default function BoardCanvas({ board, initialNotes, currentUser, isOwner 
 
   /* ── Delete note ── */
   const deleteNote = async (id: string) => {
+    // Optimistic: remove from local state immediately so UI updates without waiting
+    setNotes(n => n.filter(x => x.id !== id));
     await supabase.from("notes").delete().eq("id", id);
   };
 
