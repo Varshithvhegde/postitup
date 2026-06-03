@@ -75,9 +75,8 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
   const [newColor, setNewColor] = useState<NoteColor>("yellow");
   const [authorName, setAuthorName] = useState(() => typeof window !== "undefined" ? localStorage.getItem("piu_name") ?? "" : "");
 
-  /* ── Dragging a note ── */
-  // finalPos always reflects the latest dragged position so mouseUp never reads stale state
-  const dragging = useRef<{ id: string; ox: number; oy: number; startX: number; startY: number; finalX: number; finalY: number } | null>(null);
+  /* ── Dragging notes or rating cards ── */
+  const dragging = useRef<{ id: string; type: "note" | "rating"; ox: number; oy: number; startX: number; startY: number; finalX: number; finalY: number } | null>(null);
 
   /* ── Voted set ── */
   const [voted, setVoted] = useState<Set<string>>(new Set());
@@ -184,19 +183,23 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
       const dy = (e.clientY - dragging.current.startY) / scale;
       const nx = snap(dragging.current.ox + dx, board.mode);
       const ny = snap(dragging.current.oy + dy, board.mode);
-      // Keep ref in sync so mouseUp always has the final position
       dragging.current.finalX = nx;
       dragging.current.finalY = ny;
-      setNotes(ns => ns.map(n => n.id === dragging.current?.id ? { ...n, x: nx, y: ny } : n));
+      if (dragging.current.type === "note") {
+        setNotes(ns => ns.map(n => n.id === dragging.current?.id ? { ...n, x: nx, y: ny } : n));
+      } else {
+        setRatings(rs => rs.map(r => r.id === dragging.current?.id ? { ...r, x: nx, y: ny } : r));
+      }
     }
   }, [isPanning, scale, board.mode]);
 
   const onCanvasMouseUp = useCallback(async () => {
     setIsPanning(false);
     if (dragging.current) {
-      const { id, finalX, finalY } = dragging.current;
+      const { id, type, finalX, finalY } = dragging.current;
       dragging.current = null;
-      const { error } = await supabase.from("notes").update({ x: finalX, y: finalY }).eq("id", id);
+      const table = type === "rating" ? "ratings" : "notes";
+      const { error } = await supabase.from(table).update({ x: finalX, y: finalY }).eq("id", id);
       if (error) console.error("Position save failed:", error.message, error.code);
     }
   }, [supabase]);
@@ -270,7 +273,13 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
   const onNoteMouseDown = (e: React.MouseEvent, note: Note) => {
     if ((e.target as HTMLElement).closest("button")) return;
     e.stopPropagation();
-    dragging.current = { id: note.id, ox: note.x, oy: note.y, startX: e.clientX, startY: e.clientY, finalX: note.x, finalY: note.y };
+    dragging.current = { id: note.id, type: "note", ox: note.x, oy: note.y, startX: e.clientX, startY: e.clientY, finalX: note.x, finalY: note.y };
+  };
+
+  const onRatingMouseDown = (e: React.MouseEvent, r: Rating) => {
+    if ((e.target as HTMLElement).closest("button")) return;
+    e.stopPropagation();
+    dragging.current = { id: r.id, type: "rating", ox: r.x, oy: r.y, startX: e.clientX, startY: e.clientY, finalX: r.x, finalY: r.y };
   };
 
   /* ── Copy board link ── */
@@ -368,11 +377,13 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
             <div
               key={r.id}
               className="note-card note-enter"
+              onMouseDown={e => onRatingMouseDown(e, r)}
               style={{
                 position: "absolute",
                 left: r.x, top: r.y,
                 width: r.width,
                 transform: `rotate(${r.rotation}deg)`,
+                cursor: "grab",
                 userSelect: "none",
                 zIndex: 2,
               }}
