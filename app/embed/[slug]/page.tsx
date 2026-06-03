@@ -13,14 +13,16 @@ export default async function EmbedPage({ params }: { params: Promise<{ slug: st
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: notes } = await supabase
-    .from("notes").select("*").eq("board_id", board.id)
-    .order("created_at", { ascending: true });
+  const [{ data: notes }, { data: ratings }] = await Promise.all([
+    supabase.from("notes").select("*").eq("board_id", board.id).order("created_at", { ascending: true }),
+    supabase.from("ratings").select("*").eq("board_id", board.id).order("created_at", { ascending: true }),
+  ]);
 
   return (
     <EmbedCanvas
       board={board}
       initialNotes={notes ?? []}
+      initialRatings={ratings ?? []}
       currentUser={user ? { id: user.id, email: user.email ?? "" } : null}
     />
   );
