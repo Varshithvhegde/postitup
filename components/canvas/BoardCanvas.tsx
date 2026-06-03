@@ -362,7 +362,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
         onWheel={onWheel}
       >
         {/* Hint text */}
-        {notes.length === 0 && (
+        {notes.length === 0 && ratings.length === 0 && (
           <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", textAlign: "center", pointerEvents: "none", zIndex: 1 }}>
             <p style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "1.4rem", color: "var(--ink3)" }}>Double-click anywhere to add a note</p>
             <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.95rem", color: "var(--ink3)", marginTop: 6 }}>Or click "Add note" in the toolbar</p>
