@@ -25,6 +25,10 @@ export interface Rating {
   author_name: string;
   user_id: string | null;
   voter_fingerprint: string;
+  x: number;
+  y: number;
+  width: number;
+  rotation: number;
   created_at: string;
 }
 
