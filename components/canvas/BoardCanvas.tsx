@@ -53,11 +53,8 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
   const [notes, setNotes] = useState<Note[]>(initialNotes);
   const [ratings, setRatings] = useState<Rating[]>(initialRatings);
   const [showRatings, setShowRatings] = useState(false);
-  // modal tab: "note" | "review"
-  const [modalTab, setModalTab] = useState<"note" | "review">("note");
-  // review form state
+  // review state — lives inside the unified note modal
   const [reviewStars, setReviewStars] = useState(0);
-  const [reviewText, setReviewText] = useState("");
   const [reviewHover, setReviewHover] = useState(0);
   const [reviewError, setReviewError] = useState("");
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
@@ -125,9 +122,11 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
     return () => { supabase.removeChannel(ch); };
   }, [board.id, board.enable_ratings, supabase]);
 
-  /* ── Submit review ── */
+  /* ── Submit review — uses same newText + authorName as note form ── */
   const submitReview = async () => {
     if (reviewStars === 0) { setReviewError("Pick a star rating first"); return; }
+    const contentErr = validateNoteContent(newText);
+    if (contentErr) { setAddError(contentErr); return; }
     setReviewSubmitting(true);
     setReviewError("");
     const fp = getFingerprint();
@@ -136,7 +135,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
     const { error } = await supabase.from("ratings").insert({
       board_id: board.id,
       stars: reviewStars,
-      review: reviewText.trim() ? sanitizeText(reviewText).slice(0, 300) : null,
+      review: sanitizeText(newText).slice(0, 300),
       author_name: name,
       user_id: currentUser?.id ?? null,
       voter_fingerprint: fp,
@@ -153,7 +152,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
     }
     setHasRated(true);
     setReviewStars(0);
-    setReviewText("");
+    setNewText("");
     setShowAddForm(false);
   };
 
@@ -217,7 +216,6 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
     const x = snap((e.clientX - rect.left - pan.x) / scale, board.mode);
     const y = snap((e.clientY - rect.top - pan.y) / scale, board.mode);
     setAddPos({ x, y });
-    setModalTab("note");
     setShowAddForm(true);
   }, [pan, scale, board.mode]);
 
@@ -320,7 +318,6 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
           {/* Unified add button — opens modal with Note/Review tabs */}
           <button onClick={() => {
             setAddPos({ x: Math.max(60, 120 - pan.x / scale), y: Math.max(60, 80 - pan.y / scale) });
-            setModalTab("note");
             setShowAddForm(true);
           }}
             style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", background: "var(--ink)", border: "none", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.95rem", color: "white" }}>
@@ -482,147 +479,99 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
         </div>
       </div>
 
-      {/* ── Add modal (tabbed: Note | Review) ── */}
+      {/* ── Add note modal — single unified form, stars optional when ratings enabled ── */}
       {showAddForm && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(28,28,28,0.35)", backdropFilter: "blur(3px)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
-          onClick={() => setShowAddForm(false)}>
-          <div style={{ position: "relative", maxWidth: 400, width: "100%" }} onClick={e => e.stopPropagation()}>
-            <span
-              className={`tape ${modalTab === "note" ? colorTape(newColor) : "tape-y"}`}
-              style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 56, height: 17, borderRadius: 2, zIndex: 10 }}
-            />
-            <div className="sk" style={{ background: modalTab === "note" ? colorBg(newColor) : "var(--sticky-y)", padding: "0 0 22px" }}>
+          onClick={() => { setShowAddForm(false); setReviewStars(0); setNewText(""); setAddError(""); setReviewError(""); }}>
+          <div style={{ position: "relative", maxWidth: 390, width: "100%" }} onClick={e => e.stopPropagation()}>
+            <span className={`tape ${colorTape(newColor)}`} style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 56, height: 17, borderRadius: 2, zIndex: 10 }} />
+            <div className="sk" style={{ background: colorBg(newColor), padding: "28px 24px 22px" }}>
               <div className="sk-b" />
               <div className="sk-i">
 
-                {/* Tabs — only show when ratings enabled */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <h3 style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "1.1rem", color: "var(--ink)" }}>
+                    New sticky note
+                  </h3>
+                  <button onClick={() => setShowAddForm(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink2)" }}>
+                    <X size={18} />
+                  </button>
+                </div>
+
+                {/* Author name */}
+                <input value={authorName} onChange={e => setAuthorName(e.target.value.slice(0, LIMITS.authorName.max))}
+                  placeholder="Your name (optional)"
+                  style={{ width: "100%", padding: "7px 10px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink)", outline: "none", marginBottom: 10 }} />
+
+                {/* Note text */}
+                <div style={{ position: "relative", marginBottom: 10 }}>
+                  <textarea autoFocus value={newText}
+                    onChange={e => { setAddError(""); setNewText(e.target.value.slice(0, LIMITS.noteContent.max)); }}
+                    onKeyDown={e => { if (e.key === "Enter" && e.metaKey) reviewStars > 0 ? submitReview() : addNote(); }}
+                    placeholder="Write your note…" rows={3}
+                    style={{ width: "100%", padding: "10px", border: `1.5px solid ${newText.length >= LIMITS.noteContent.max ? "#ef4444" : "rgba(28,28,28,0.2)"}`, background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink)", outline: "none", resize: "vertical" }}
+                  />
+                  <span style={{ position: "absolute", bottom: 6, right: 8, fontFamily: "var(--font-kalam), serif", fontSize: "0.7rem", color: newText.length >= LIMITS.noteContent.max ? "#ef4444" : "var(--ink3)" }}>
+                    {newText.length}/{LIMITS.noteContent.max}
+                  </span>
+                </div>
+
+                {/* Color picker */}
+                <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                  {COLORS.map(c => (
+                    <button key={c.value} onClick={() => setNewColor(c.value)}
+                      style={{ width: 26, height: 26, background: c.bg, border: newColor === c.value ? "2.5px solid var(--ink)" : "1.5px solid rgba(28,28,28,0.2)", cursor: "pointer", transform: newColor === c.value ? "scale(1.15)" : "scale(1)", transition: "transform 0.15s", borderRadius: 2 }} />
+                  ))}
+                </div>
+
+                {/* Star rating — only when board has ratings enabled */}
                 {board.enable_ratings && (
-                  <div style={{ display: "flex", borderBottom: "1.5px solid rgba(28,28,28,0.12)" }}>
-                    {[
-                      { key: "note",   label: "📌 Note" },
-                      { key: "review", label: "⭐ Review" },
-                    ].map(({ key, label }) => (
-                      <button key={key}
-                        onClick={() => setModalTab(key as "note" | "review")}
-                        style={{
-                          flex: 1, padding: "12px 0",
-                          fontFamily: "var(--font-sketch), var(--font-kalam), serif",
-                          fontSize: "1rem",
-                          fontWeight: modalTab === key ? 700 : 400,
-                          color: "var(--ink)",
-                          background: "none", border: "none",
-                          borderBottom: modalTab === key ? "2.5px solid var(--ink)" : "2.5px solid transparent",
-                          cursor: "pointer",
-                          marginBottom: -1.5,
-                          transition: "border-color 0.15s",
-                        }}>
-                        {label}
-                      </button>
-                    ))}
+                  <div style={{ borderTop: "1px dashed rgba(28,28,28,0.18)", paddingTop: 12, marginBottom: 14 }}>
+                    <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.82rem", color: "var(--ink3)", marginBottom: 8 }}>
+                      Rate this board? (optional)
+                    </p>
+                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                      {[1, 2, 3, 4, 5].map(s => (
+                        <button key={s} type="button"
+                          onClick={() => setReviewStars(reviewStars === s ? 0 : s)}
+                          onMouseEnter={() => setReviewHover(s)}
+                          onMouseLeave={() => setReviewHover(0)}
+                          style={{ background: "none", border: "none", cursor: "pointer", padding: 1, transform: reviewHover === s ? "scale(1.3)" : "scale(1)", transition: "transform 0.1s" }}>
+                          <Star size={24}
+                            fill={s <= (reviewHover || reviewStars) ? "#f59e0b" : "none"}
+                            stroke={s <= (reviewHover || reviewStars) ? "#f59e0b" : "rgba(28,28,28,0.25)"}
+                            strokeWidth={1.8}
+                          />
+                        </button>
+                      ))}
+                      {reviewStars > 0 && (
+                        <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.82rem", color: "var(--ink2)", marginLeft: 6 }}>
+                          {["", "Poor", "Fair", "Good", "Great", "Amazing!"][reviewStars]}
+                        </span>
+                      )}
+                    </div>
+                    {reviewError && <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.82rem", color: "#ef4444", marginTop: 6 }}>{reviewError}</p>}
                   </div>
                 )}
 
-                <div style={{ padding: board.enable_ratings ? "20px 24px 0" : "28px 24px 0" }}>
-                  {/* Close button */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                    <h3 style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "1.1rem", color: "var(--ink)" }}>
-                      {modalTab === "note" ? "New sticky note" : "Leave a review"}
-                    </h3>
-                    <button onClick={() => setShowAddForm(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink2)" }}><X size={18} /></button>
-                  </div>
+                {addError && <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "#ef4444", marginBottom: 10 }}>{addError}</p>}
 
-                  {/* Author name — shared */}
-                  <input value={authorName} onChange={e => setAuthorName(e.target.value.slice(0, LIMITS.authorName.max))}
-                    placeholder="Your name (optional)"
-                    style={{ width: "100%", padding: "7px 10px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink)", outline: "none", marginBottom: 12 }} />
-
-                  {modalTab === "note" ? (
-                    <>
-                      {/* Note text */}
-                      <div style={{ position: "relative", marginBottom: 14 }}>
-                        <textarea autoFocus value={newText}
-                          onChange={e => { setAddError(""); setNewText(e.target.value.slice(0, LIMITS.noteContent.max)); }}
-                          onKeyDown={e => { if (e.key === "Enter" && e.metaKey) addNote(); }}
-                          placeholder="Write your note…" rows={4}
-                          style={{ width: "100%", padding: "10px", border: `1.5px solid ${newText.length >= LIMITS.noteContent.max ? "#ef4444" : "rgba(28,28,28,0.2)"}`, background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink)", outline: "none", resize: "vertical" }}
-                        />
-                        <span style={{ position: "absolute", bottom: 6, right: 8, fontFamily: "var(--font-kalam), serif", fontSize: "0.7rem", color: newText.length >= LIMITS.noteContent.max ? "#ef4444" : "var(--ink3)" }}>
-                          {newText.length}/{LIMITS.noteContent.max}
-                        </span>
-                      </div>
-                      {addError && <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "#ef4444", marginBottom: 10 }}>{addError}</p>}
-                      {/* Color picker */}
-                      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-                        {COLORS.map(c => (
-                          <button key={c.value} onClick={() => setNewColor(c.value)}
-                            style={{ width: 28, height: 28, background: c.bg, border: newColor === c.value ? "2.5px solid var(--ink)" : "1.5px solid rgba(28,28,28,0.2)", cursor: "pointer", transform: newColor === c.value ? "scale(1.15)" : "scale(1)", transition: "transform 0.15s", borderRadius: 2 }} />
-                        ))}
-                      </div>
-                      <div style={{ display: "flex", gap: 10 }}>
-                        <button onClick={addNote} disabled={!newText.trim()}
-                          style={{ flex: 1, padding: "10px", background: newText.trim() ? "var(--ink)" : "var(--ink3)", color: "white", border: "none", cursor: newText.trim() ? "pointer" : "default", fontFamily: "var(--font-kalam), serif", fontSize: "1rem" }}>
-                          Pin it! 📌
-                        </button>
-                        <button onClick={() => setShowAddForm(false)}
-                          style={{ padding: "10px 14px", background: "none", border: "1.5px solid rgba(28,28,28,0.2)", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink2)" }}>
-                          Cancel
-                        </button>
-                      </div>
-                      <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.72rem", color: "var(--ink3)", marginTop: 8, textAlign: "center" }}>⌘+Enter to submit</p>
-                    </>
-                  ) : (
-                    <>
-                      {hasRated ? (
-                        <div style={{ padding: "14px", background: "var(--sticky-g)", border: "1.5px solid rgba(28,28,28,0.12)", display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                          <Star size={16} fill="#16a34a" stroke="#16a34a" />
-                          <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink)" }}>Thanks for your review!</p>
-                        </div>
-                      ) : (
-                        <>
-                          {/* Star picker */}
-                          <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-                            {[1,2,3,4,5].map(s => (
-                              <button key={s} type="button"
-                                onClick={() => setReviewStars(s)}
-                                onMouseEnter={() => setReviewHover(s)}
-                                onMouseLeave={() => setReviewHover(0)}
-                                style={{ background: "none", border: "none", cursor: "pointer", padding: 0, transform: reviewHover === s ? "scale(1.25)" : "scale(1)", transition: "transform 0.1s" }}>
-                                <Star size={30}
-                                  fill={s <= (reviewHover || reviewStars) ? "#f59e0b" : "none"}
-                                  stroke={s <= (reviewHover || reviewStars) ? "#f59e0b" : "rgba(28,28,28,0.3)"}
-                                  strokeWidth={1.8}
-                                />
-                              </button>
-                            ))}
-                          </div>
-                          {/* Review text */}
-                          <div style={{ position: "relative", marginBottom: 14 }}>
-                            <textarea value={reviewText}
-                              onChange={e => { setReviewError(""); setReviewText(e.target.value.slice(0, 300)); }}
-                              placeholder="Share your thoughts… (optional)" rows={3}
-                              style={{ width: "100%", padding: "10px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink)", outline: "none", resize: "none" }}
-                            />
-                            <span style={{ position: "absolute", bottom: 6, right: 8, fontFamily: "var(--font-kalam), serif", fontSize: "0.7rem", color: "var(--ink3)" }}>
-                              {reviewText.length}/300
-                            </span>
-                          </div>
-                          {reviewError && <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "#ef4444", marginBottom: 10 }}>{reviewError}</p>}
-                          <div style={{ display: "flex", gap: 10 }}>
-                            <button onClick={submitReview} disabled={reviewSubmitting || reviewStars === 0}
-                              style={{ flex: 1, padding: "10px", background: reviewStars > 0 && !reviewSubmitting ? "var(--ink)" : "var(--ink3)", color: "white", border: "none", cursor: reviewStars > 0 && !reviewSubmitting ? "pointer" : "default", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
-                              <Star size={14} fill="white" stroke="white" />
-                              {reviewSubmitting ? "Submitting…" : "Post review"}
-                            </button>
-                            <button onClick={() => setShowAddForm(false)}
-                              style={{ padding: "10px 14px", background: "none", border: "1.5px solid rgba(28,28,28,0.2)", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink2)" }}>
-                              Cancel
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </>
-                  )}
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button
+                    onClick={() => reviewStars > 0 ? submitReview() : addNote()}
+                    disabled={!newText.trim() || reviewSubmitting}
+                    style={{ flex: 1, padding: "10px", background: newText.trim() && !reviewSubmitting ? "var(--ink)" : "var(--ink3)", color: "white", border: "none", cursor: newText.trim() && !reviewSubmitting ? "pointer" : "default", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                    {reviewStars > 0
+                      ? <><Star size={14} fill="white" stroke="white" />{reviewSubmitting ? "Posting…" : "Post review"}</>
+                      : "Pin it! 📌"
+                    }
+                  </button>
+                  <button onClick={() => { setShowAddForm(false); setReviewStars(0); setNewText(""); }}
+                    style={{ padding: "10px 14px", background: "none", border: "1.5px solid rgba(28,28,28,0.2)", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink2)" }}>
+                    Cancel
+                  </button>
                 </div>
+                <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.72rem", color: "var(--ink3)", marginTop: 8, textAlign: "center" }}>⌘+Enter to submit</p>
               </div>
             </div>
           </div>
