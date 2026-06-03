@@ -96,6 +96,56 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Live reviews board */}
+      <section className="max-w-5xl mx-auto px-6 pb-20">
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div style={{ position: "relative", display: "inline-block" }}>
+            <span className="tape tape-y" style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 72, height: 18, borderRadius: 2 }} />
+            <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "var(--ink3)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+              from real users
+            </span>
+          </div>
+          <h2 style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "clamp(1.6rem,4vw,2.4rem)", color: "var(--ink)", marginTop: 12, marginBottom: 6 }}>
+            See what people are pinning
+          </h2>
+          <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.95rem", color: "var(--ink3)" }}>
+            Live board — drop a note or a review below ↓
+          </p>
+        </div>
+
+        {/* Embedded live board */}
+        <div style={{ position: "relative" }}>
+          {/* Tape corners on the iframe frame */}
+          <span className="tape tape-b" style={{ position: "absolute", top: -10, left: 24, width: 60, height: 18, borderRadius: 2, transform: "rotate(-4deg)", zIndex: 10 }} />
+          <span className="tape tape-p" style={{ position: "absolute", top: -10, right: 24, width: 60, height: 18, borderRadius: 2, transform: "rotate(4deg)", zIndex: 10 }} />
+          <div className="sk" style={{
+            overflow: "hidden",
+            position: "relative",
+            boxShadow: "6px 8px 0 rgba(28,28,28,0.14)",
+          }}>
+            <div className="sk-b" />
+            <iframe
+              src="https://postitup.varshithvhegde.in/embed/ratig-gcll"
+              width="100%"
+              height="520"
+              style={{ display: "block", border: "none" }}
+              title="Live PostItUp board — drop a note"
+              loading="lazy"
+            />
+          </div>
+        </div>
+
+        {/* CTA below board */}
+        <div style={{ textAlign: "center", marginTop: 20 }}>
+          <Link href="https://postitup.varshithvhegde.in/board/ratig-gcll"
+            target="_blank" rel="noopener noreferrer"
+            style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink2)", textDecoration: "none" }}>
+            Open full board ↗
+          </Link>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer style={{ borderTop: "1.5px solid rgba(28,28,28,0.1)", padding: "24px", textAlign: "center" }}>
         <div style={{ display: "flex", justifyContent: "center", gap: 24, flexWrap: "wrap", marginBottom: 10 }}>
