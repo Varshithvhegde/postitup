@@ -29,6 +29,7 @@ export default function NewBoardPage() {
   const [prompt, setPrompt] = useState("");
   const [mode, setMode] = useState<BoardMode>("free");
   const [visibility, setVisibility] = useState<BoardVisibility>("link");
+  const [enableRatings, setEnableRatings] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -49,6 +50,7 @@ export default function NewBoardPage() {
       description: description.trim() ? sanitizeText(description).slice(0, LIMITS.boardDesc.max) : null,
       prompt: prompt.trim() ? sanitizeText(prompt).slice(0, LIMITS.boardPrompt.max) : null,
       slug, mode, visibility,
+      enable_ratings: enableRatings,
       owner_id: user.id,
     }).select().single();
 
@@ -128,6 +130,20 @@ export default function NewBoardPage() {
                     ))}
                   </div>
                 </div>
+
+                {/* Ratings toggle */}
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", border: `1.5px solid ${enableRatings ? "var(--ink)" : "rgba(28,28,28,0.18)"}`, background: enableRatings ? "var(--sticky-y)" : "white", cursor: "pointer", transition: "background 0.15s, border-color 0.15s" }}>
+                  <input type="checkbox" checked={enableRatings} onChange={e => setEnableRatings(e.target.checked)}
+                    style={{ marginTop: 3, width: 16, height: 16, flexShrink: 0, cursor: "pointer", accentColor: "var(--ink)" }} />
+                  <div>
+                    <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", fontWeight: 700, color: "var(--ink)", marginBottom: 2 }}>
+                      ⭐ Enable star ratings
+                    </p>
+                    <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "var(--ink2)" }}>
+                      Visitors can leave a 1-5 star review with an optional comment. A "Reviews" button appears on the board.
+                    </p>
+                  </div>
+                </label>
 
                 {error && <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "#ef4444" }}>{error}</p>}
 

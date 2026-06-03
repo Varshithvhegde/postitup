@@ -28,6 +28,7 @@ export default function BoardSettings({ board }: { board: Board }) {
   const [prompt, setPrompt]         = useState(board.prompt ?? "");
   const [mode, setMode]             = useState<BoardMode>(board.mode);
   const [visibility, setVisibility] = useState<BoardVisibility>(board.visibility);
+  const [enableRatings, setEnableRatings] = useState(board.enable_ratings ?? false);
   const [saving, setSaving]         = useState(false);
   const [saved, setSaved]           = useState(false);
   const [error, setError]           = useState("");
@@ -53,6 +54,7 @@ export default function BoardSettings({ board }: { board: Board }) {
         prompt:      prompt.trim()      ? sanitizeText(prompt).slice(0, LIMITS.boardPrompt.max)    : null,
         mode,
         visibility,
+        enable_ratings: enableRatings,
         updated_at: new Date().toISOString(),
       })
       .eq("id", board.id);
@@ -139,6 +141,20 @@ export default function BoardSettings({ board }: { board: Board }) {
                     ))}
                   </div>
                 </div>
+
+                {/* Ratings toggle */}
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", border: `1.5px solid ${enableRatings ? "var(--ink)" : "rgba(28,28,28,0.18)"}`, background: enableRatings ? "var(--sticky-y)" : "white", cursor: "pointer", transition: "background 0.15s, border-color 0.15s" }}>
+                  <input type="checkbox" checked={enableRatings} onChange={e => setEnableRatings(e.target.checked)}
+                    style={{ marginTop: 3, width: 16, height: 16, flexShrink: 0, cursor: "pointer", accentColor: "var(--ink)" }} />
+                  <div>
+                    <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", fontWeight: 700, color: "var(--ink)", marginBottom: 2 }}>
+                      ⭐ Enable star ratings
+                    </p>
+                    <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "var(--ink2)" }}>
+                      Visitors can leave a 1-5 star review with an optional comment.
+                    </p>
+                  </div>
+                </label>
 
                 {error && <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "#ef4444" }}>{error}</p>}
 

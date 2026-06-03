@@ -11,9 +11,21 @@ export interface Board {
   visibility: BoardVisibility;
   mode: BoardMode;
   prompt: string | null;
-  background: BoardMode; // same as mode — controls canvas bg
+  background: BoardMode;
+  enable_ratings: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface Rating {
+  id: string;
+  board_id: string;
+  stars: number;
+  review: string | null;
+  author_name: string;
+  user_id: string | null;
+  voter_fingerprint: string;
+  created_at: string;
 }
 
 export interface Note {

@@ -1,12 +1,13 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Board, Note, NoteColor } from "@/types";
+import type { Board, Note, NoteColor, Rating } from "@/types";
 import { sanitizeText, validateNoteContent, validateAuthorName, LIMITS } from "@/lib/sanitize";
 import {
   Plus, X, ThumbsUp, Trash2, Link as LinkIcon,
-  Settings, ChevronLeft, Copy, Check,
+  Settings, ChevronLeft, Copy, Check, Star,
 } from "lucide-react";
+import RatingsPanel from "@/components/canvas/RatingsPanel";
 
 /* ── Color palette ── */
 const COLORS: { value: NoteColor; label: string; bg: string; tape: string }[] = [
@@ -39,16 +40,18 @@ function getFingerprint() {
 interface Props {
   board: Board;
   initialNotes: Note[];
+  initialRatings: Rating[];
   currentUser: { id: string; email: string } | null;
   isOwner: boolean;
 }
 
-export default function BoardCanvas({ board, initialNotes, currentUser, isOwner }: Props) {
+export default function BoardCanvas({ board, initialNotes, initialRatings, currentUser, isOwner }: Props) {
   const supabase = createClient();
   const canvasRef = useRef<HTMLDivElement>(null);
 
   /* ── State ── */
   const [notes, setNotes] = useState<Note[]>(initialNotes);
+  const [showRatings, setShowRatings] = useState(false);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
   const [isPanning, setIsPanning] = useState(false);
@@ -246,6 +249,15 @@ export default function BoardCanvas({ board, initialNotes, currentUser, isOwner 
             {copied ? <Check size={14} /> : <Copy size={14} />}
             {copied ? "Copied!" : "Share"}
           </button>
+
+          {/* Ratings button — shown when board has ratings enabled */}
+          {board.enable_ratings && (
+            <button onClick={() => setShowRatings(true)}
+              style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", background: "var(--sticky-y)", border: "1.5px solid rgba(28,28,28,0.18)", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.88rem", color: "var(--ink)" }}>
+              <Star size={14} fill="#f59e0b" stroke="#f59e0b" strokeWidth={1.8} />
+              Reviews
+            </button>
+          )}
 
           {/* Add note button */}
           <button onClick={() => { setAddPos({ x: 120 - pan.x / scale, y: 80 - pan.y / scale }); setShowAddForm(true); }}
@@ -491,6 +503,18 @@ export default function BoardCanvas({ board, initialNotes, currentUser, isOwner 
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Ratings panel ── */}
+      {showRatings && board.enable_ratings && (
+        <RatingsPanel
+          boardId={board.id}
+          boardTitle={board.title}
+          initialRatings={initialRatings}
+          currentUser={currentUser}
+          isOwner={isOwner}
+          onClose={() => setShowRatings(false)}
+        />
       )}
     </div>
   );
