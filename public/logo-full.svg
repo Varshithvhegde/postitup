@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" width="280" height="64">
+  <!-- Icon mark -->
+  <g transform="translate(4,4)">
+    <!-- Back note orange -->
+    <g transform="translate(28,28) rotate(9) translate(-28,-28)">
+      <rect x="10" y="14" width="36" height="32" rx="1" fill="#ffedd5" stroke="#1c1c1c" stroke-width="1.8"/>
+      <rect x="18" y="10" width="18" height="7" rx="1.5" fill="rgba(253,186,116,0.85)" transform="rotate(-2,27,13.5)"/>
+    </g>
+    <!-- Middle note blue -->
+    <g transform="translate(28,28) rotate(-7) translate(-28,-28)">
+      <rect x="13" y="12" width="36" height="34" rx="1" fill="#dbeafe" stroke="#1c1c1c" stroke-width="1.8"/>
+      <rect x="20" y="8"  width="18" height="7" rx="1.5" fill="rgba(147,197,253,0.85)" transform="rotate(2,29,11.5)"/>
+    </g>
+    <!-- Front note yellow -->
+    <g transform="translate(28,28) rotate(-2) translate(-28,-28)">
+      <rect x="11" y="10" width="38" height="38" rx="1" fill="#fef9c3" stroke="#1c1c1c" stroke-width="2"/>
+      <!-- Tape -->
+      <rect x="19" y="6" width="20" height="8" rx="1.5" fill="rgba(253,224,71,0.85)" transform="rotate(-1.5,29,10)"/>
+      <rect x="19" y="6" width="2" height="8" fill="rgba(255,255,255,0.25)" transform="rotate(-1.5,29,10)"/>
+      <rect x="23" y="6" width="2" height="8" fill="rgba(255,255,255,0.25)" transform="rotate(-1.5,29,10)"/>
+      <rect x="27" y="6" width="2" height="8" fill="rgba(255,255,255,0.25)" transform="rotate(-1.5,29,10)"/>
+      <rect x="31" y="6" width="2" height="8" fill="rgba(255,255,255,0.25)" transform="rotate(-1.5,29,10)"/>
+      <!-- Lines -->
+      <line x1="17" y1="26" x2="43" y2="26" stroke="#ccc9bc" stroke-width="1"/>
+      <line x1="17" y1="33" x2="43" y2="33" stroke="#ccc9bc" stroke-width="1"/>
+      <line x1="17" y1="40" x2="36" y2="40" stroke="#ccc9bc" stroke-width="1"/>
+      <!-- Pin -->
+      <circle cx="30" cy="11" r="4.5" fill="#ef4444" stroke="#1c1c1c" stroke-width="1.4"/>
+      <circle cx="28.8" cy="9.8" r="1.2" fill="rgba(255,255,255,0.5)"/>
+      <line x1="30" y1="15.5" x2="30" y2="20" stroke="#1c1c1c" stroke-width="1.3" stroke-linecap="round"/>
+    </g>
+    <!-- Pencil -->
+    <g transform="translate(46,44) rotate(-42)">
+      <rect x="-3" y="-13" width="6" height="16" rx="1" fill="#1c1c1c"/>
+      <polygon points="-3,3 3,3 0,8" fill="#f59e0b"/>
+      <rect x="-3" y="-15" width="6" height="3.5" rx="1" fill="#ef4444"/>
+      <line x1="0" y1="6" x2="0" y2="7.5" stroke="#1c1c1c" stroke-width="0.9" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="72" y="38"
+    font-family="'Architects Daughter', 'Kalam', Georgia, serif"
+    font-size="28"
+    font-weight="700"
+    fill="#1c1c1c"
+    letter-spacing="-0.5">PostItUp</text>
+
+  <!-- Wobbly underline under wordmark -->
+  <path d="M72,46 C90,43 110,49 130,45 C150,41 170,48 195,44 C205,42 210,46 212,44"
+    stroke="#f59e0b" stroke-width="2.2" fill="none" stroke-linecap="round"
+    style="filter:url(#roughen-logo)"/>
+
+  <!-- Pin dot accent on the 'P' -->
+  <circle cx="75.5" cy="16" r="3.5" fill="#ef4444" stroke="#1c1c1c" stroke-width="1.2"/>
+
+  <defs>
+    <filter id="roughen-logo" x="-5%" y="-50%" width="110%" height="200%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="3" seed="5" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+</svg>

@@ -19,6 +19,10 @@ const architectsDaughter = Architects_Daughter({
 export const metadata: Metadata = {
   title: "PostItUp — Collaborative Sticky Note Boards",
   description: "Create interactive sticky note boards for your team, community, or project. Free, real-time, embeddable.",
+  icons: {
+    icon: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -21,8 +21,9 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="sticky top-0 z-50" style={{ borderBottom: "1.5px solid rgba(28,28,28,0.12)", background: "rgba(250,249,246,0.92)", backdropFilter: "blur(6px)" }}>
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <span style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "1.4rem", fontWeight: 700, color: "var(--ink)" }}>
-            PostItUp 📌
+          <span style={{ display:"flex", alignItems:"center", gap: 8 }}>
+            <img src="/logo.svg" alt="" width={32} height={32} style={{ display:"block" }} />
+            <span style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "1.4rem", fontWeight: 700, color: "var(--ink)" }}>PostItUp</span>
           </span>
           <div className="flex items-center gap-4">
             <Link href="/auth/login" style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink2)", textDecoration: "none" }}>

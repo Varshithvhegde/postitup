@@ -23,8 +23,9 @@ export default async function DashboardPage() {
       {/* Nav */}
       <nav className="sticky top-0 z-50" style={{ borderBottom: "1.5px solid rgba(28,28,28,0.12)", background: "rgba(250,249,246,0.92)", backdropFilter: "blur(6px)" }}>
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/" style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "1.3rem", fontWeight: 700, color: "var(--ink)", textDecoration: "none" }}>
-            PostItUp 📌
+          <Link href="/" style={{ display:"flex", alignItems:"center", gap:8, textDecoration:"none" }}>
+            <img src="/logo.svg" alt="" width={30} height={30} style={{ display:"block" }} />
+            <span style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "1.3rem", fontWeight: 700, color: "var(--ink)" }}>PostItUp</span>
           </Link>
           <div className="flex items-center gap-4">
             <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink2)" }}>{user.email}</span>

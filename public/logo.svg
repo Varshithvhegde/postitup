@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <!-- Background pin board circle -->
+  <circle cx="60" cy="60" r="56" fill="#faf9f6" stroke="#1c1c1c" stroke-width="2.5"/>
+
+  <!-- Subtle dot grid -->
+  <pattern id="dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse">
+    <circle cx="6" cy="6" r="0.9" fill="#c8c4ba"/>
+  </pattern>
+  <circle cx="60" cy="60" r="54" fill="url(#dots)"/>
+
+  <!-- Back note (orange, tilted right) -->
+  <g transform="translate(60,60) rotate(8) translate(-60,-60)">
+    <rect x="30" y="38" width="44" height="40" rx="1" fill="#ffedd5" stroke="#1c1c1c" stroke-width="1.8"/>
+    <!-- Washi tape top -->
+    <rect x="43" y="33" width="24" height="9" rx="1.5" fill="rgba(253,186,116,0.85)"
+      transform="rotate(-2,55,37.5)"
+      style="mix-blend-mode:multiply"/>
+    <!-- Ruled lines -->
+    <line x1="36" y1="55" x2="68" y2="55" stroke="#ccc9bc" stroke-width="1"/>
+    <line x1="36" y1="63" x2="68" y2="63" stroke="#ccc9bc" stroke-width="1"/>
+    <line x1="36" y1="71" x2="60" y2="71" stroke="#ccc9bc" stroke-width="1"/>
+  </g>
+
+  <!-- Middle note (blue, tilted left) -->
+  <g transform="translate(60,60) rotate(-6) translate(-60,-60)">
+    <rect x="36" y="34" width="44" height="42" rx="1" fill="#dbeafe" stroke="#1c1c1c" stroke-width="1.8"/>
+    <!-- Washi tape top -->
+    <rect x="46" y="29" width="24" height="9" rx="1.5" fill="rgba(147,197,253,0.85)"
+      transform="rotate(2,58,33.5)"
+      style="mix-blend-mode:multiply"/>
+    <!-- Ruled lines -->
+    <line x1="42" y1="52" x2="74" y2="52" stroke="#b0c4de" stroke-width="1"/>
+    <line x1="42" y1="60" x2="74" y2="60" stroke="#b0c4de" stroke-width="1"/>
+    <line x1="42" y1="68" x2="65" y2="68" stroke="#b0c4de" stroke-width="1"/>
+  </g>
+
+  <!-- Front note (yellow, slightly tilted) -->
+  <g transform="translate(60,60) rotate(-2) translate(-60,-60)">
+    <rect x="33" y="32" width="48" height="46" rx="1" fill="#fef9c3" stroke="#1c1c1c" stroke-width="2"/>
+    <!-- Washi tape top — yellow -->
+    <rect x="44" y="27" width="26" height="10" rx="2" fill="rgba(253,224,71,0.85)"
+      transform="rotate(-1.5,57,32)"
+      style="mix-blend-mode:multiply"/>
+    <!-- Tape texture stripes -->
+    <rect x="44" y="27" width="2" height="10" rx="0" fill="rgba(255,255,255,0.25)" transform="rotate(-1.5,57,32)"/>
+    <rect x="48" y="27" width="2" height="10" rx="0" fill="rgba(255,255,255,0.25)" transform="rotate(-1.5,57,32)"/>
+    <rect x="52" y="27" width="2" height="10" rx="0" fill="rgba(255,255,255,0.25)" transform="rotate(-1.5,57,32)"/>
+    <rect x="56" y="27" width="2" height="10" rx="0" fill="rgba(255,255,255,0.25)" transform="rotate(-1.5,57,32)"/>
+    <rect x="60" y="27" width="2" height="10" rx="0" fill="rgba(255,255,255,0.25)" transform="rotate(-1.5,57,32)"/>
+    <rect x="64" y="27" width="2" height="10" rx="0" fill="rgba(255,255,255,0.25)" transform="rotate(-1.5,57,32)"/>
+    <!-- Ruled lines -->
+    <line x1="40" y1="50" x2="74" y2="50" stroke="#ccc9bc" stroke-width="1.1"/>
+    <line x1="40" y1="59" x2="74" y2="59" stroke="#ccc9bc" stroke-width="1.1"/>
+    <line x1="40" y1="68" x2="65" y2="68" stroke="#ccc9bc" stroke-width="1.1"/>
+    <!-- Pin — red circle on top center -->
+    <circle cx="57" cy="29.5" r="5.5" fill="#ef4444" stroke="#1c1c1c" stroke-width="1.5"/>
+    <circle cx="55.5" cy="28" r="1.5" fill="rgba(255,255,255,0.5)"/>
+    <!-- Pin needle -->
+    <line x1="57" y1="35" x2="57" y2="41" stroke="#1c1c1c" stroke-width="1.4" stroke-linecap="round"/>
+  </g>
+
+  <!-- Pencil icon bottom-right -->
+  <g transform="translate(76,76) rotate(-40)">
+    <rect x="-4" y="-18" width="8" height="22" rx="1" fill="#1c1c1c"/>
+    <polygon points="-4,4 4,4 0,11" fill="#f59e0b"/>
+    <rect x="-4" y="-20" width="8" height="4" rx="1" fill="#ef4444"/>
+    <line x1="-4" y1="4" x2="4" y2="4" stroke="#faf9f6" stroke-width="0.8"/>
+    <!-- pencil tip line -->
+    <line x1="0" y1="8" x2="0" y2="10" stroke="#1c1c1c" stroke-width="1" stroke-linecap="round"/>
+  </g>
+</svg>
