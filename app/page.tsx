@@ -1,8 +1,19 @@
 "use client";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { StickyNote, Users, Zap, Code2, ArrowRight } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LandingPage() {
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setLoggedIn(!!session);
+    });
+  }, []);
+
   return (
     <main className="min-h-screen overflow-x-hidden" style={{ background: "var(--paper)" }}>
       {/* SVG roughen filter */}
@@ -26,13 +37,27 @@ export default function LandingPage() {
             <span style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "1.4rem", fontWeight: 700, color: "var(--ink)" }}>PostItUp</span>
           </span>
           <div className="flex items-center gap-4">
-            <Link href="/auth/login" style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink2)", textDecoration: "none" }}>
-              Sign in
-            </Link>
-            <Link href="/auth/signup" className="sk" style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", padding: "6px 18px", color: "var(--ink)", textDecoration: "none", background: "var(--sticky-y)", position: "relative" }}>
-              <div className="sk-b" />
-              <span className="sk-i">Get started →</span>
-            </Link>
+            {loggedIn ? (
+              <>
+                <Link href="/new" style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink2)", textDecoration: "none" }}>
+                  New board
+                </Link>
+                <Link href="/dashboard" className="sk" style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", padding: "6px 18px", color: "var(--ink)", textDecoration: "none", background: "var(--sticky-y)", position: "relative" }}>
+                  <div className="sk-b" />
+                  <span className="sk-i">Dashboard →</span>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/auth/login" style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink2)", textDecoration: "none" }}>
+                  Sign in
+                </Link>
+                <Link href="/auth/signup" className="sk" style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", padding: "6px 18px", color: "var(--ink)", textDecoration: "none", background: "var(--sticky-y)", position: "relative" }}>
+                  <div className="sk-b" />
+                  <span className="sk-i">Get started →</span>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -58,13 +83,15 @@ export default function LandingPage() {
         </p>
 
         <div className="flex flex-wrap gap-3 justify-center">
-          <Link href="/auth/signup" className="sk" style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1.1rem", padding: "12px 28px", background: "var(--ink)", color: "white", textDecoration: "none", position: "relative", display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <Link href={loggedIn ? "/new" : "/auth/signup"} className="sk" style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1.1rem", padding: "12px 28px", background: "var(--ink)", color: "white", textDecoration: "none", position: "relative", display: "inline-flex", alignItems: "center", gap: 8 }}>
             <div className="sk-b" />
-            <span className="sk-i flex items-center gap-2" style={{ color: "white" }}>Create a board <ArrowRight size={16} /></span>
+            <span className="sk-i flex items-center gap-2" style={{ color: "white" }}>
+              {loggedIn ? "Create a board" : "Get started free"} <ArrowRight size={16} />
+            </span>
           </Link>
-          <Link href="/board/demo" className="sk" style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1.1rem", padding: "12px 28px", background: "var(--sticky-b)", color: "var(--ink)", textDecoration: "none", position: "relative" }}>
+          <Link href={loggedIn ? "/dashboard" : "/board/demo"} className="sk" style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1.1rem", padding: "12px 28px", background: "var(--sticky-b)", color: "var(--ink)", textDecoration: "none", position: "relative" }}>
             <div className="sk-b" />
-            <span className="sk-i">Try demo board</span>
+            <span className="sk-i">{loggedIn ? "My dashboard →" : "Try demo board"}</span>
           </Link>
         </div>
       </section>
