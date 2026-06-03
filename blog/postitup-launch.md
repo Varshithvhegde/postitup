@@ -1,81 +1,107 @@
-# I Got Tired of Miro. So I Built My Own Sticky Note Board.
+# I Got Sick of Miro Eating 10 Minutes of Every Retro. So I Built a Corkboard for the Web.
 
-Let me set the scene.
+Here's a thing that happens on every team I've been on.
 
-It's a Friday afternoon. Sprint retro. Someone shares a Miro link in Slack. Three people say they can't figure out how to add a card. One person is still on the free tier and can't edit. Somebody else accidentally deletes the entire frame. We spend fifteen minutes fixing the board before we even start the actual retro.
+Sprint ends. Someone schedules the retro. Someone else shares a Miro link in Slack. Half the team opens it and immediately hits some kind of wall. "I'm on the viewer plan." "It's not loading for me." "How do I add a sticky note again?" One person accidentally deletes the entire frame. Another person is still zoomed into the wrong corner of the board and can't figure out how to get back.
 
-I've been in that situation more times than I want to admit. And every time I thought the same thing: this is a sticky note board. Why is it this complicated?
+We spend the first ten to fifteen minutes of every retro just fixing the board.
 
-So a few weeks ago I sat down and built PostItUp. A real-time collaborative sticky note board for the web. It looks like an actual physical corkboard, anyone with the link can post without creating an account, and getting started takes about thirty seconds.
+And the whole time I'm sitting there thinking: this is a sticky note board. This is the most ancient, simple, obvious tool in the history of meetings. How did we end up needing a tutorial to use it?
 
-This is the full story of how it works, what I built it with, and where it's going.
+So I built something. It's called PostItUp. It's a real-time collaborative sticky note board that runs in the browser. It looks like an actual physical corkboard. Anyone can drop a note without creating an account. And the whole thing runs for free.
 
----
-
-## What It Actually Looks Like
-
-![PostItUp Landing Page](./screenshots/landing.png)
-
-Yeah. Paper texture. Dot grid background. Notes with washi tape. Push pins on project cards. Wobbly hand-drawn borders on everything.
-
-I made a deliberate choice to go all-in on the physical aesthetic. Most tools in this space look like a SaaS dashboard. Clean, flat, efficient, soulless. That visual language is fine for serious project management. But for quick feedback sessions and retros, it creates this weird professional distance that makes people more guarded with what they write.
-
-Sticky notes on a physical board feel disposable. They feel like you're allowed to be honest and messy. I wanted the digital version to feel the same way.
+I want to walk you through all of it. The product, the design decisions, the technical choices, the bugs that nearly broke me, and where this is going. This is going to be a long one. Grab something to drink.
 
 ---
 
-## Creating a Board
+## What the Thing Actually Is
 
-![New Board Creation Form](./screenshots/new-board.png)
+![PostItUp landing page](./screenshots/landing.png)
 
-Creating a board is one form. You give it a title, an optional description, a prompt for contributors (something like "What went well this sprint?" or "Drop your feedback here"), and then you make two decisions.
+The pitch is simple. You create a board. You share a link. People click the link and start posting notes immediately. No signup, no tutorial, no onboarding flow.
 
-**Canvas mode.** This is the one I spent the most time on.
+Each note is a sticky. You pick a color, type something, optionally add your name, and hit "Pin it". The note appears on the canvas. Everyone watching the board sees it appear in real time.
 
-Free canvas is an open dot-grid. Notes land wherever you drop them. You can pan around with alt+drag or middle mouse. Zoom in and out with ctrl+scroll. Fully flexible, slightly chaotic in a good way.
+That's the core loop. Everything else is details on top of that.
 
-Grid mode snaps everything to a 32-pixel grid automatically. Same freedom, but your notes align without you having to try. Way nicer when you're adding a lot of notes fast and don't want to spend time tidying.
+The visual design is intentional and it matters more than it looks. Every card has a wobbly hand-drawn border. Notes have little washi tape strips holding them to the board. Push pins mark the project cards. The background is either a dot grid, a ruled notebook page, or a grid pattern depending on what you choose. The fonts are actual handwriting fonts that stay legible at small sizes.
 
-Ruled lines puts horizontal notebook lines across the canvas. It changes the whole mood. Works really well for sequential feedback or when the content is naturally top-to-bottom rather than scattered.
-
-**Visibility.** Public means anyone can find it and post. Link-only requires the URL but no account. Private is just you.
+I made it look this way on purpose. I'll explain why in a minute.
 
 ---
 
-## The Canvas
+## Why Anyone Would Make It Look Like This
 
-![Board Canvas With Notes](./screenshots/canvas.png)
+Most collaboration tools look like a SaaS dashboard. Clean, flat, efficient, slightly cold. There's nothing wrong with that for serious project management.
 
-Double-click anywhere on the canvas to add a note. A modal pops up, you type, pick a color, add your name if you want attribution, and hit "Pin it". The note appears immediately.
+But for quick feedback sessions and retros and brainstorming, that visual language is actively working against you. It signals "professional context" in a way that makes people more measured and careful with what they write. The same people who would stick a brutally honest Post-it on a physical board will write something much more diplomatic in a Jira ticket.
 
-And here's the part that makes it actually useful for live sessions: everyone watching the board sees your note appear in real time. No refresh. No polling. It just shows up.
+Physical sticky notes feel disposable. Throwaway. Safe to be honest. I wanted the digital version to carry that same feeling.
 
-Notes can be dragged around the canvas and the position saves to the database the moment you let go. Upvoted with a thumbs up. Deleted by the author or the board owner.
-
-The canvas itself handles pan and zoom so you can spread notes out as much as you want. It's not infinite canvas in the Figma sense but it's large enough that you won't run out of space.
+There's also something to be said for tools that just look different. When you're staring at the same Notion document or the same Miro board all week, you get a little numb to them. Opening something that looks like a corkboard on your screen creates a tiny mental context switch. It's a small thing but I think it matters.
 
 ---
 
-## Embedding It Anywhere
+## Three Canvas Modes Because One Was Never Going to Work for Everyone
 
-![Embed Panel in Board Settings](./screenshots/embed-panel.png)
+![New board creation page](./screenshots/new-board.png)
 
-This is the feature I think has the most utility for developers specifically.
+When you create a board you pick one of three canvas modes.
 
-Every board has an embed panel. You get three options.
+**Free canvas** is the open dot-grid. Notes land wherever you put them. You pan with alt+drag or middle mouse, zoom with ctrl+scroll. Notes can go anywhere. It's the most flexible and also the most chaotic.
 
-**iFrame** is the simple one. One line drops the full canvas into any webpage with no extra configuration.
+**Grid mode** snaps everything to a 32-pixel grid automatically. The canvas is still completely open but your notes line up without you manually trying to align them. This is what I use by default now. Structured enough to stay readable, free enough to not feel constrained.
+
+**Ruled lines** puts horizontal notebook lines across the background. The whole mood of the board changes. Works really well for sequential feedback or when you're collecting ordered lists rather than freeform ideas.
+
+The board owner sets the mode at creation time and it applies to the whole canvas. Same codebase, same components, three completely different feels.
+
+I spent more time on this decision than I expected to. My first instinct was "just do free canvas, that's the obvious choice". But then I ran a couple of quick feedback sessions with it and kept noticing that people who were less comfortable with open canvases kept adding notes awkwardly, unsure of where to put them. Grid mode fixed that completely. And ruled lines came from someone saying they wanted it to feel more like a questionnaire.
+
+Features should come from watching people use the thing, not from imagining what they might want.
+
+---
+
+## Posting a Note
+
+Double-click anywhere on the canvas. A modal appears. Type something. Pick a color. Add your name if you want (it saves your preference in localStorage so you only type it once). Hit "Pin it".
+
+The note appears on the canvas.
+
+If someone else is watching the same board, they see it appear right then. No refresh. The board is live.
+
+![Board canvas with notes](./screenshots/canvas.png)
+
+Notes have a slight random rotation when they land. Between negative three and positive three degrees, picked randomly at insert time and stored in the database. It's a tiny detail but it makes the board look like notes placed by humans rather than software. Uniformly straight sticky notes on a corkboard would look wrong, so they don't.
+
+You can drag notes around the canvas. The position saves to the database the moment you let go. Anyone watching sees them move.
+
+You can upvote notes you agree with. One vote per device per note. The vote count lives on the note permanently.
+
+Board owners can delete any note. Authors can delete their own notes. The owner can also clear the whole board from settings.
+
+---
+
+## The Part I Think Developers Will Actually Use
+
+![Embed panel in board settings](./screenshots/embed-panel.png)
+
+Every board has an embed panel. You open it from the toolbar using the link icon button. Three options.
+
+**iFrame** is the obvious one. One line, your board is embedded in any webpage.
 
 ```html
 <iframe 
-  src="https://postitup.varshithvhegde.in/embed/your-board-slug" 
+  src="https://postitup.varshithvhegde.in/embed/your-board-slug"
   width="100%" 
   height="600" 
   frameborder="0">
 </iframe>
 ```
 
-**Script tag** is more interesting. Add this to any website and it injects a floating "Leave a note" button in the corner. Click it and a slide-out drawer opens with the full board. The iframe only loads when someone actually clicks the button, so there's zero performance cost on pages where nobody interacts with it.
+There's a separate `/embed/[slug]` route that renders a stripped-down version of the canvas with no navigation or app chrome. Just the board. Supabase Realtime is still running in there so it updates live inside the iframe.
+
+**Script tag** is the one I actually think is useful. Drop this into any webpage:
 
 ```html
 <script 
@@ -85,21 +111,35 @@ Every board has an embed panel. You get three options.
 </script>
 ```
 
-I've used this on a few static HTML pages already and the whole setup takes about a minute.
+That injects a floating "Leave a note" button in the corner. Click it and a slide-out drawer opens with the full board inside. The iframe only loads when someone actually clicks the button. If nobody opens the drawer, the board costs you nothing. No network request, no layout shift, nothing.
 
-**React / Next.js component** is what's coming next. More on that below.
+The script is completely self-contained. No framework required on your end. It works on a static HTML page, a WordPress blog, a Next.js app, whatever. I've already used it on a few pages and the whole setup takes about ninety seconds.
+
+**React component** is what's coming next.
+
+Right now the snippet shows you how you'd use it once it's published. The npm package isn't out yet but it's in progress. The goal is something like:
+
+```tsx
+import { PostItBoard } from "postitup"
+
+<PostItBoard
+  board="your-board-slug"
+  baseUrl="https://postitup.varshithvhegde.in"
+  height={500}
+/>
+```
+
+TypeScript types, SSR-safe, works in Next.js without hydration issues, theming props so it doesn't look foreign inside your app. If you'd use this, watch the repo. It's coming.
 
 ---
 
-## How It's Built (The Technical Part)
+## Now the Technical Part
 
-Stack first: **Next.js 16** with the App Router, **Supabase** for database and real-time, TypeScript throughout, and basically no UI libraries. Everything visual is hand-rolled CSS.
+Stack: Next.js 16 with the App Router, Supabase for database and real-time and auth, TypeScript everywhere, Tailwind for layout utilities. No component library. Everything visual is hand-rolled CSS.
 
-### The fonts and the wobbly borders
+### How the wobbly borders work
 
-Two Google Fonts. Kalam for body text and labels, which is a handwriting font that stays legible at small sizes unlike most options in that category. Architects Daughter for headings, which has that slightly imperfect letterboard quality without going full crayon.
-
-The wobbly borders on cards are a single SVG filter defined once in the layout and referenced everywhere:
+The hand-drawn look on cards comes from a single SVG filter defined in the page layout:
 
 ```xml
 <filter id="roughen">
@@ -118,13 +158,24 @@ The wobbly borders on cards are a single SVG filter defined once in the layout a
 </filter>
 ```
 
-The displacement map shifts pixels using fractal noise. The result looks hand-drawn without any canvas API or images involved. Apply it to any element with `filter: url(#roughen)` and it looks like someone sketched around it.
+The displacement map shifts pixels based on fractal noise. The result looks like someone drew the border by hand. Apply it to any element with `filter: url(#roughen)` and it gets the wobbly look. One filter, defined once, referenced everywhere.
 
-The washi tape is a semi-transparent div with a repeating linear gradient to simulate texture, and `mix-blend-mode: multiply` to make it sit naturally on top of whatever is underneath.
+The washi tape strips are semi-transparent divs with a repeating linear gradient for texture:
 
-### Real-time notes
+```css
+background-image: repeating-linear-gradient(
+  90deg,
+  transparent 0, transparent 3px,
+  rgba(255,255,255,0.18) 3px, rgba(255,255,255,0.18) 4px
+);
+mix-blend-mode: multiply;
+```
 
-Supabase Realtime is a WebSocket layer on Postgres. You subscribe to change events on a table with a row-level filter, and Supabase pushes you the payloads directly.
+Mix-blend-mode multiply makes them look translucent against whatever is behind them, the same way real tape behaves on paper. These tiny things add up.
+
+### Real-time in Supabase
+
+Supabase Realtime is a WebSocket layer on top of Postgres. You subscribe to change events on a table with filters, and Supabase sends you the payloads when rows change.
 
 ```typescript
 const channel = supabase
@@ -137,7 +188,7 @@ const channel = supabase
   }, (payload) => {
     setNotes(n =>
       n.find(x => x.id === payload.new.id)
-        ? n
+        ? n  // already have it from optimistic update
         : [...n, payload.new as Note]
     )
   })
@@ -152,44 +203,63 @@ const channel = supabase
   .subscribe()
 ```
 
-The INSERT handler checks if the note already exists locally before adding it. This prevents duplicates when you're the person who just added a note (your own optimistic update is already in state when the real-time event arrives).
+The INSERT handler checks if the note already exists before adding it. When you post a note, your own UI updates immediately (optimistic update). The real-time event arrives a moment later. Without the check you'd see the note twice.
 
-### The drag position bug I spent too long on
+### The drag bug that wasted a whole afternoon
 
-Dragging notes was working visually but positions weren't saving correctly. The note would snap back to its old position on reload.
+Dragging notes worked visually. Positions were not saving correctly. The note would jump back to where it started when you reloaded the page.
 
-The problem was a stale closure. The `mouseup` handler was reading position from a React state snapshot that existed when the callback was created, not the current position after dragging.
+The problem was a stale closure. The mouseup handler was reading the note's position from a React state snapshot that existed when the callback was first created, not the current position after dragging.
 
-The fix was a ref that gets updated on every `mousemove`:
+React state updates are asynchronous. By the time mouseup fires, the state you close over when creating the handler can be many renders behind. The note looks like it moved on screen but the value you're saving to the database is the old one.
+
+The fix is to store the live position in a ref that gets updated on every mousemove:
 
 ```typescript
 const dragging = useRef<{
   id: string
-  ox: number      // original x
-  oy: number      // original y  
-  startX: number  // where mouse started
+  ox: number      // original position
+  oy: number
+  startX: number  // mouse start
   startY: number
   finalX: number  // updated every mousemove
   finalY: number
 } | null>(null)
 
-// mousemove handler:
+// in onMouseMove:
+const nx = snap(dragging.current.ox + dx, board.mode)
+const ny = snap(dragging.current.oy + dy, board.mode)
 dragging.current.finalX = nx
 dragging.current.finalY = ny
+setNotes(ns => ns.map(n =>
+  n.id === dragging.current?.id ? { ...n, x: nx, y: ny } : n
+))
 
-// mouseup handler:
+// in onMouseUp:
 const { id, finalX, finalY } = dragging.current
-dragging.current = null
+dragging.current = null  // clear before the async call
 await supabase.from("notes").update({ x: finalX, y: finalY }).eq("id", id)
 ```
 
-Refs are mutable and always give you the live value. State snapshots don't. Using a ref for drag tracking means mouseup always reads the actual final position regardless of React's render cycle.
+Refs are mutable and always give you the current value regardless of when the closure was created. The note position in the ref is the actual final position at the time mouseup fires. Problem solved.
 
-### Security and RLS
+### Row Level Security and the upvote problem
 
-Supabase Row Level Security policies determine what each user can do with each row. Without these, your entire database is accessible to anyone who has your anon key, which is embedded in the client and completely public.
+Supabase uses Postgres Row Level Security. Policies on every table control what each user can read, insert, update, and delete. Skip this and your database is open to anyone who gets your anon key, which is embedded in your frontend bundle and completely public.
 
-The trickiest policy to get right was upvotes. I needed to stop clients from directly setting the upvotes column to any number they wanted. My first attempt used a `with check` that compared against a subquery back to the notes table. Postgres walked into an infinite loop: evaluating the policy triggered a read on notes, which triggered the policy again.
+Most of the policies are straightforward. The upvote one was not.
+
+I needed to stop clients from directly setting the upvotes column to any arbitrary number. My first attempt was a `with check` constraint that compared the column value against a subquery back into the notes table:
+
+```sql
+create policy "update notes" on notes
+  for update using (...)
+  with check (
+    upvotes = (select upvotes from notes where id = notes.id)
+  )
+```
+
+That caused infinite recursion. Postgres tried to evaluate the policy. The policy read from the notes table. Reading from the notes table triggered the policy. Which read from the notes table again. Stack overflow at the database level.
 
 The actual solution was a `SECURITY DEFINER` function that owns the entire upvote operation:
 
@@ -225,23 +295,117 @@ end;
 $$;
 ```
 
-The function runs with the database owner's permissions, not the calling user's. Direct inserts to `note_votes` are blocked at the RLS level. The only way to upvote is through this function, and the function enforces the one-vote-per-fingerprint rule atomically.
+`SECURITY DEFINER` means the function runs with the database owner's permissions, not the caller's. Direct inserts into note_votes are blocked at the policy level. The only way to register a vote is to call this function. The function checks for duplicate votes and increments atomically. Nobody can manipulate the upvotes column directly from the client.
 
-### GDPR
+### How positions save to the database
 
-Two Postgres functions handle compliance. `export_user_data()` returns everything we hold about the user as JSON, which the frontend downloads as a file. `delete_user_account()` deletes all owned boards (which cascades to notes), anonymises contributions on other boards so the content stays but the attribution is wiped, deletes the profile, then deletes the auth record.
+Every note has x, y, width, and rotation columns. These are floats. When you drag a note and let go, one database update fires with the new coordinates. When someone else is watching the board, Supabase Realtime delivers the UPDATE event and the note moves on their screen.
 
-The account page exposes both of these directly with no hoops to jump through.
+The rotation is set once at insert time. A random value between negative three and positive three degrees, stored permanently. It never changes after that. This is what makes the board look like a real corkboard rather than a grid.
+
+For grid mode, coordinates snap to the nearest 32-pixel increment before saving:
+
+```typescript
+function snap(v: number, mode: Board["mode"]) {
+  return mode === "grid" ? Math.round(v / GRID) * GRID : v
+}
+```
+
+Free mode and ruled mode skip the snap entirely. The function is pure, called in the mousemove handler for live preview and again before the database write to make sure what you see is what gets saved.
+
+### Input validation on both sides
+
+Everything goes through a sanitizer before touching the database:
+
+```typescript
+export function sanitizeText(input: string): string {
+  return input
+    .replace(/<[^>]*>/g, "")       // strip HTML tags
+    .replace(/javascript:/gi, "")  // kill JS URIs
+    .trim()
+}
+```
+
+Length limits are enforced in onChange handlers so you can't even attempt to submit something too long. And then as a final backstop, the database has column-level constraints:
+
+```sql
+alter table notes
+  add constraint notes_content_length 
+    check (char_length(content) between 1 and 500),
+  add constraint notes_upvotes_nonneg 
+    check (upvotes >= 0)
+```
+
+If someone bypasses the frontend entirely and sends raw API requests, the database rejects anything that violates these. Two layers, independently enforced.
+
+### The GDPR stuff
+
+I want this to be something people can trust. So I built proper data rights in from the start rather than adding them later when it's annoying.
+
+Two Postgres functions do the work.
+
+Data export returns everything we hold about you as JSON. The account page downloads it as a file. One click, you have your data. This satisfies GDPR Article 20.
+
+Account deletion is more involved. It needs to delete all your boards (notes cascade via foreign key), anonymise any notes you posted on other people's boards (content stays, attribution is removed), delete your profile, then delete the auth record. The last step requires elevated permissions, so the function runs as SECURITY DEFINER. After the database operations, the client clears localStorage and signs out.
+
+Total wipe. Nothing left.
+
+---
+
+## Auth
+
+GitHub OAuth via Supabase. Email and password if you prefer.
+
+A Postgres trigger creates a profile record automatically when someone signs up:
+
+```sql
+create or replace function handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, email, display_name)
+  values (
+    new.id,
+    coalesce(new.email, ''),
+    coalesce(
+      new.raw_user_meta_data->>'display_name',
+      split_part(coalesce(new.email, 'anonymous'), '@', 1)
+    )
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$ language plpgsql security definer;
+```
+
+`on conflict do nothing` stops errors if the trigger somehow fires twice for the same user. This happened during testing more than once so I'm glad it's there.
+
+Route protection is a Next.js middleware that checks Supabase session before serving protected pages. If there's no session, you get redirected to login with your intended destination as a query parameter. After signing in you land where you meant to go.
+
+Anonymous users can post on public and link-only boards with no account at all. Their notes show an author name from localStorage. Their votes are tracked by a random fingerprint also from localStorage. Nothing tied to an identity. Nothing in the database except the note itself.
+
+---
+
+## The Boards: How the Full Flow Works
+
+You create a board on `/new`. Title, description, a prompt for contributors, canvas mode, visibility. Submit and you get redirected to `/board/your-slug`.
+
+The slug is generated from the board title with a four-character random suffix to prevent collisions. `sprint-retro-3a7f` instead of just `sprint-retro`. Simple and human-readable.
+
+The board page is a Next.js server component that fetches the board data and initial notes server-side. This matters for performance: when the page loads the canvas is already populated. No loading spinner. No empty board that fills in after a moment. The notes are in the HTML.
+
+After that initial load, Supabase Realtime takes over and handles all subsequent updates. Two different systems, each doing exactly what they're good at.
+
+Board settings let owners update the title, description, prompt, canvas mode, and visibility. Changing mode from free to grid doesn't move any existing notes, it just starts snapping new ones. Changing visibility takes effect immediately.
+
+Deleting a board requires typing the board title to confirm. All notes cascade-delete. Irreversible. The confirmation requirement is annoying on purpose.
 
 ---
 
 ## What's Coming
 
-**The npm package.** This is the one I'm most excited about finishing.
+The npm package is the thing I'm most focused on right now.
 
-The iframe embed works well, but dropping a React component directly into your app is a better experience when you're already in a React codebase. The plan is a `<PostItBoard />` component with a proper TypeScript API, theming props, and SSR safety so it works in Next.js without hydration issues.
-
-Something like:
+The iframe embed works well but dropping a component directly into your app is a much cleaner experience when you're already in a React codebase. The plan is a `<PostItBoard />` with a TypeScript API, theming props so it doesn't look foreign in your UI, and SSR safety so it works in Next.js without hydration warnings.
 
 ```tsx
 import { PostItBoard } from "postitup"
@@ -250,14 +414,30 @@ import { PostItBoard } from "postitup"
   board="your-board-slug"
   baseUrl="https://postitup.varshithvhegde.in"
   height={500}
+  theme="paper"
 />
 ```
 
-That's publishing to npm soon. If that's something you'd use, watch the GitHub repo.
+That's the shape of it. Publishing to npm soon. Watch the GitHub repo if you'd use this.
 
-**Lane mode.** Columns. Kanban-style layout for boards where you want things organized into categories. Think Liked / Meh / Disliked for product feedback, or What Went Well / What Didn't / Action Items for retros.
+After that: **lane mode**. Columns. Kanban-style layout so you can have things like Liked / Meh / Disliked for product feedback sessions, or What Went Well / What Didn't / Action Items for retros. Same real-time sync, same anonymous posting, just organized into columns instead of a free canvas.
 
-**Board templates.** Starting from scratch every time you want to run a retro gets old fast. Pre-built templates for common use cases so you can be up and running in ten seconds instead of thirty.
+And **board templates** so you're not starting from scratch every time you want to run a retro.
+
+---
+
+## Free. Actually Free.
+
+The whole thing runs on Supabase free tier and Vercel hobby plan.
+
+Supabase free: 500MB database, 50,000 monthly active users, unlimited API requests.  
+Vercel hobby: unlimited deployments, free domain, fast edge network.
+
+You're not going to hit those limits running retros with your team.
+
+This is the same lesson as the FormRelay thing I wrote about a while back. There's this huge gap between "run your own servers" and "pay $20 a month for something that's really just a database insert". An embarrassing number of problems that cost real money every month are actually just weekend projects in disguise.
+
+A sticky note board that updates in real time sounds complicated. It isn't. It's a database table, a WebSocket subscription, and a canvas that knows how to drag things around. Total code across the meaningful files is maybe two thousand lines. You could read the whole repo in an afternoon.
 
 ---
 
@@ -267,25 +447,24 @@ Live: **[postitup.varshithvhegde.in](https://postitup.varshithvhegde.in)**
 
 Source: **[github.com/Varshithvhegde/postitup](https://github.com/Varshithvhegde/postitup)**
 
-Create a board. Share the link. See if it does what you need it to do.
+Create a board. Share the link with someone. Watch notes appear in real time.
 
-If something is broken or you have an idea for a feature, open an issue on GitHub or email me directly at varshithvh@gmail.com.
+If something is broken or you have a feature idea, open an issue. If you want to contribute, PRs are open. MIT licensed so do whatever you want with it.
 
----
-
-*Varshith V Hegde is a backend and cloud developer based in Bengaluru. He works on high-performance systems and occasionally ships side projects. Find him on [GitHub](https://github.com/VarshithVHegde) and [Dev.to](https://dev.to/varshithvhegde).*
+And if you end up using the embed somewhere, I'd genuinely love to see it. Drop it in the comments or email me at varshithvh@gmail.com.
 
 ---
 
-> **Screenshot checklist before publishing:**
-> - `screenshots/landing.png` — the landing page at postitup.varshithvhegde.in
-> - `screenshots/new-board.png` — the new board creation form at /new
-> - `screenshots/canvas.png` — a live board with several notes on it
-> - `screenshots/embed-panel.png` — the embed code panel (click the link icon in the board toolbar)
+*Varshith V Hegde is a backend and cloud developer based in Bengaluru. He builds high-performance systems at work and ships side projects when he's frustrated enough with the existing options. Find him on [GitHub](https://github.com/VarshithVHegde), [Dev.to](https://dev.to/varshithvhegde), and [LinkedIn](https://linkedin.com/in/varshithvhegde).*
+
+---
+
+> **Before you publish, grab these four screenshots:**
+> 1. `screenshots/landing.png` — postitup.varshithvhegde.in landing page
+> 2. `screenshots/new-board.png` — the /new board creation form with a mode selected
+> 3. `screenshots/canvas.png` — a live board with at least 5-6 notes scattered around
+> 4. `screenshots/embed-panel.png` — the embed code panel open in the board toolbar
 >
 > **Dev.to tags:** `showdev` `webdev` `nextjs` `supabase` `opensource`
 >
-> **Title alternatives if you want options:**
-> - "I got tired of Miro. So I built my own sticky note board."
-> - "Building a real-time collaborative board with Next.js and Supabase"
-> - "PostItUp: a sticky note board that looks like a real corkboard"
+> **Cover image tip:** Screenshot the canvas with a bunch of colorful notes and use that. It looks distinctive in the feed.
