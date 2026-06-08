@@ -136,6 +136,65 @@ export default function EmbedCanvas({ board, initialNotes, initialRatings, curre
     if (e.ctrlKey || e.metaKey) { e.preventDefault(); setScale(s => Math.min(2, Math.max(0.4, s - e.deltaY * 0.001))); }
   }, []);
 
+  /* ── Touch support ── */
+  const lastTap = useRef(0);
+  const touchPanStart = useRef({ tx: 0, ty: 0, px: 0, py: 0 });
+  const pinchStart = useRef<{ dist: number; scale: number } | null>(null);
+  const getTouchDist = (t: React.TouchList) =>
+    Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      pinchStart.current = { dist: getTouchDist(e.touches), scale };
+      return;
+    }
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      if (!(t.target as HTMLElement).closest(".note-card")) {
+        const now = Date.now();
+        if (now - lastTap.current < 300) {
+          const rect = canvasRef.current!.getBoundingClientRect();
+          setAddPos({ x: snap((t.clientX - rect.left - pan.x) / scale, board.mode), y: snap((t.clientY - rect.top - pan.y) / scale, board.mode) });
+          setShowAdd(true);
+          lastTap.current = 0;
+          return;
+        }
+        lastTap.current = now;
+        touchPanStart.current = { tx: t.clientX, ty: t.clientY, px: pan.x, py: pan.y };
+      }
+    }
+  }, [pan, scale, board.mode]);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2 && pinchStart.current) {
+      e.preventDefault();
+      const newScale = Math.min(2, Math.max(0.4, pinchStart.current.scale * (getTouchDist(e.touches) / pinchStart.current.dist)));
+      setScale(newScale);
+      return;
+    }
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      if (dragging.current) {
+        const nx = snap(dragging.current.ox + (t.clientX - dragging.current.startX) / scale, board.mode);
+        const ny = snap(dragging.current.oy + (t.clientY - dragging.current.startY) / scale, board.mode);
+        dragging.current.finalX = nx; dragging.current.finalY = ny;
+        if (dragging.current.type === "note") setNotes(ns => ns.map(n => n.id === dragging.current?.id ? { ...n, x: nx, y: ny } : n));
+        else setRatings(rs => rs.map(r => r.id === dragging.current?.id ? { ...r, x: nx, y: ny } : r));
+        return;
+      }
+      setPan({ x: touchPanStart.current.px + t.clientX - touchPanStart.current.tx, y: touchPanStart.current.py + t.clientY - touchPanStart.current.ty });
+    }
+  }, [scale, board.mode]);
+
+  const onTouchEnd = useCallback(async () => {
+    pinchStart.current = null;
+    if (dragging.current) {
+      const { id, type, finalX, finalY } = dragging.current;
+      dragging.current = null;
+      await supabase.from(type === "rating" ? "ratings" : "notes").update({ x: finalX, y: finalY }).eq("id", id);
+    }
+  }, [supabase]);
+
   const addNote = async () => {
     setAddError("");
     const contentErr = validateNoteContent(newText);
@@ -214,7 +273,8 @@ export default function EmbedCanvas({ board, initialNotes, initialRatings, curre
       <div ref={canvasRef} className={bgClass}
         style={{ flex: 1, position: "relative", overflow: "hidden", cursor: isPanning ? "grabbing" : "default" }}
         onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp}
-        onMouseLeave={onMouseUp} onDoubleClick={onDblClick} onWheel={onWheel}>
+        onMouseLeave={onMouseUp} onDoubleClick={onDblClick} onWheel={onWheel}
+        onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
 
         {isEmpty && (
           <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", textAlign: "center", pointerEvents: "none" }}>
@@ -228,6 +288,7 @@ export default function EmbedCanvas({ board, initialNotes, initialRatings, curre
           {board.enable_ratings && ratings.map(r => (
             <div key={r.id} className="note-card"
               onMouseDown={e => { if ((e.target as HTMLElement).closest("button")) return; e.stopPropagation(); dragging.current = { id: r.id, type: "rating", ox: r.x, oy: r.y, startX: e.clientX, startY: e.clientY, finalX: r.x, finalY: r.y }; }}
+              onTouchStart={e => { if ((e.target as HTMLElement).closest("button")) return; e.stopPropagation(); const t = e.touches[0]; dragging.current = { id: r.id, type: "rating", ox: r.x, oy: r.y, startX: t.clientX, startY: t.clientY, finalX: r.x, finalY: r.y }; }}
               style={{ position: "absolute", left: r.x, top: r.y, width: r.width, transform: `rotate(${r.rotation}deg)`, cursor: "grab", userSelect: "none", zIndex: 2 }}>
               <span className="tape tape-y" style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 44, height: 14, borderRadius: 2 }} />
               <div style={{ background: "var(--sticky-y)", border: "1.5px solid var(--ink)", boxShadow: "2px 3px 0 rgba(28,28,28,0.1)", padding: "20px 12px 10px" }}>
@@ -248,6 +309,7 @@ export default function EmbedCanvas({ board, initialNotes, initialRatings, curre
           {notes.map(note => (
             <div key={note.id} className="note-card"
               onMouseDown={e => { if ((e.target as HTMLElement).closest("button")) return; e.stopPropagation(); dragging.current = { id: note.id, type: "note", ox: note.x, oy: note.y, startX: e.clientX, startY: e.clientY, finalX: note.x, finalY: note.y }; }}
+              onTouchStart={e => { if ((e.target as HTMLElement).closest("button")) return; e.stopPropagation(); const t = e.touches[0]; dragging.current = { id: note.id, type: "note", ox: note.x, oy: note.y, startX: t.clientX, startY: t.clientY, finalX: note.x, finalY: note.y }; }}
               style={{ position: "absolute", left: note.x, top: note.y, width: note.width, transform: `rotate(${note.rotation}deg)`, cursor: "grab", userSelect: "none", zIndex: 2 }}>
               <span className={`tape ${colorTape(note.color)}`} style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 44, height: 14, borderRadius: 2 }} />
               <div style={{ background: colorBg(note.color), border: "1.5px solid var(--ink)", boxShadow: "2px 3px 0 rgba(28,28,28,0.1)", padding: "20px 12px 10px" }}>

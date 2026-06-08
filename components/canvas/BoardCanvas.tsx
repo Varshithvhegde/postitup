@@ -232,6 +232,101 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
     setShowAddForm(true);
   }, [pan, scale, board.mode]);
 
+  /* ── Touch support ── */
+  const lastTap = useRef(0);
+  const touchPanStart = useRef({ tx: 0, ty: 0, px: 0, py: 0 });
+  const pinchStart = useRef<{ dist: number; scale: number } | null>(null);
+
+  const getTouchDist = (t: React.TouchList) =>
+    Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      // Pinch to zoom
+      pinchStart.current = { dist: getTouchDist(e.touches), scale };
+      return;
+    }
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      const target = t.target as HTMLElement;
+
+      // Double-tap on canvas background = open add note
+      if (!target.closest(".note-card")) {
+        const now = Date.now();
+        if (now - lastTap.current < 300) {
+          const rect = canvasRef.current!.getBoundingClientRect();
+          const x = snap((t.clientX - rect.left - pan.x) / scale, board.mode);
+          const y = snap((t.clientY - rect.top - pan.y) / scale, board.mode);
+          setAddPos({ x, y });
+          setShowAddForm(true);
+          lastTap.current = 0;
+          return;
+        }
+        lastTap.current = now;
+        // Single touch on background = pan
+        touchPanStart.current = { tx: t.clientX, ty: t.clientY, px: pan.x, py: pan.y };
+        return;
+      }
+    }
+  }, [pan, scale, board.mode]);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2 && pinchStart.current) {
+      e.preventDefault();
+      const newDist = getTouchDist(e.touches);
+      const newScale = Math.min(2, Math.max(0.4, pinchStart.current.scale * (newDist / pinchStart.current.dist)));
+      setScale(newScale);
+      return;
+    }
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      if (dragging.current) {
+        const dx = (t.clientX - dragging.current.startX) / scale;
+        const dy = (t.clientY - dragging.current.startY) / scale;
+        const nx = snap(dragging.current.ox + dx, board.mode);
+        const ny = snap(dragging.current.oy + dy, board.mode);
+        dragging.current.finalX = nx;
+        dragging.current.finalY = ny;
+        if (dragging.current.type === "note") {
+          setNotes(ns => ns.map(n => n.id === dragging.current?.id ? { ...n, x: nx, y: ny } : n));
+        } else {
+          setRatings(rs => rs.map(r => r.id === dragging.current?.id ? { ...r, x: nx, y: ny } : r));
+        }
+        return;
+      }
+      // Pan canvas
+      setPan({
+        x: touchPanStart.current.px + (t.clientX - touchPanStart.current.tx),
+        y: touchPanStart.current.py + (t.clientY - touchPanStart.current.ty),
+      });
+    }
+  }, [scale, board.mode]);
+
+  const onTouchEnd = useCallback(async () => {
+    pinchStart.current = null;
+    if (dragging.current) {
+      const { id, type, finalX, finalY } = dragging.current;
+      dragging.current = null;
+      const table = type === "rating" ? "ratings" : "notes";
+      await supabase.from(table).update({ x: finalX, y: finalY }).eq("id", id);
+    }
+  }, [supabase]);
+
+  /* touch start on a note/rating card */
+  const onNoteTouchStart = (e: React.TouchEvent, note: Note) => {
+    if (e.touches.length !== 1) return;
+    e.stopPropagation();
+    const t = e.touches[0];
+    dragging.current = { id: note.id, type: "note", ox: note.x, oy: note.y, startX: t.clientX, startY: t.clientY, finalX: note.x, finalY: note.y };
+  };
+
+  const onRatingTouchStart = (e: React.TouchEvent, r: Rating) => {
+    if (e.touches.length !== 1) return;
+    e.stopPropagation();
+    const t = e.touches[0];
+    dragging.current = { id: r.id, type: "rating", ox: r.x, oy: r.y, startX: t.clientX, startY: t.clientY, finalX: r.x, finalY: r.y };
+  };
+
   /* ── Add note ── */
   const [addError, setAddError] = useState("");
   const addNote = async () => {
@@ -406,6 +501,9 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
         onMouseLeave={onCanvasMouseUp}
         onDoubleClick={onCanvasDblClick}
         onWheel={onWheel}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
       >
         {/* Hint text */}
         {notes.length === 0 && ratings.length === 0 && (
@@ -424,6 +522,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
               key={r.id}
               className="note-card note-enter"
               onMouseDown={e => editingRatingId === r.id ? e.stopPropagation() : onRatingMouseDown(e, r)}
+              onTouchStart={e => editingRatingId === r.id ? e.stopPropagation() : onRatingTouchStart(e, r)}
               style={{
                 position: "absolute",
                 left: r.x, top: r.y,
@@ -509,6 +608,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
               key={note.id}
               className="note-card note-enter"
               onMouseDown={e => editingId === note.id ? e.stopPropagation() : onNoteMouseDown(e, note)}
+              onTouchStart={e => editingId === note.id ? e.stopPropagation() : onNoteTouchStart(e, note)}
               style={{
                 position: "absolute",
                 left: note.x, top: note.y, width: note.width,
