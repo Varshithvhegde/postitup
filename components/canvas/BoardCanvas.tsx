@@ -5,7 +5,7 @@ import type { Board, Note, NoteColor, Rating } from "@/types";
 import { sanitizeText, validateNoteContent, validateAuthorName, LIMITS } from "@/lib/sanitize";
 import {
   Plus, X, ThumbsUp, Trash2, Link as LinkIcon,
-  Settings, ChevronLeft, Copy, Check, Star,
+  Settings, ChevronLeft, Copy, Check, Star, Pencil,
 } from "lucide-react";
 import RatingsPanel from "@/components/canvas/RatingsPanel";
 
@@ -77,6 +77,10 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
 
   /* ── Dragging notes or rating cards ── */
   const dragging = useRef<{ id: string; type: "note" | "rating"; ox: number; oy: number; startX: number; startY: number; finalX: number; finalY: number } | null>(null);
+
+  /* ── Inline editing ── */
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
 
   /* ── Voted set ── */
   const [voted, setVoted] = useState<Set<string>>(new Set());
@@ -253,9 +257,22 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
 
   /* ── Delete note ── */
   const deleteNote = async (id: string) => {
-    // Optimistic: remove from local state immediately so UI updates without waiting
     setNotes(n => n.filter(x => x.id !== id));
     await supabase.from("notes").delete().eq("id", id);
+  };
+
+  /* ── Edit note inline ── */
+  const startEdit = (note: Note) => {
+    setEditingId(note.id);
+    setEditText(note.content);
+  };
+
+  const saveEdit = async (id: string) => {
+    const clean = sanitizeText(editText).trim();
+    setEditingId(null);
+    if (!clean) return;
+    setNotes(ns => ns.map(n => n.id === id ? { ...n, content: clean } : n));
+    await supabase.from("notes").update({ content: clean }).eq("id", id);
   };
 
   /* ── Upvote — calls secure DB function, never touches upvotes column directly ── */
@@ -317,6 +334,16 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {/* Issue #1 — GitHub link for feedback/issues */}
+          <a href="https://github.com/Varshithvhegde/postitup/issues" target="_blank" rel="noopener noreferrer"
+            title="Report an issue or request a feature on GitHub"
+            style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", background: "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", color: "var(--ink2)", textDecoration: "none", fontFamily: "var(--font-kalam), serif", fontSize: "0.82rem", transition: "color 0.15s" }}
+            onMouseEnter={e => (e.currentTarget.style.color = "var(--ink)")}
+            onMouseLeave={e => (e.currentTarget.style.color = "var(--ink2)")}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            Feedback
+          </a>
+
           {/* Copy link */}
           <button onClick={copyLink}
             style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", background: copied ? "var(--sticky-g)" : "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.88rem", color: "var(--ink)", transition: "background 0.2s" }}>
@@ -424,57 +451,64 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
             <div
               key={note.id}
               className="note-card note-enter"
-              onMouseDown={e => onNoteMouseDown(e, note)}
+              onMouseDown={e => editingId === note.id ? e.stopPropagation() : onNoteMouseDown(e, note)}
               style={{
                 position: "absolute",
-                left: note.x,
-                top: note.y,
-                width: note.width,
+                left: note.x, top: note.y, width: note.width,
                 transform: `rotate(${note.rotation}deg)`,
-                cursor: "grab",
+                cursor: editingId === note.id ? "default" : "grab",
                 userSelect: "none",
                 "--rot": `${note.rotation}deg`,
-                zIndex: 2,
+                zIndex: editingId === note.id ? 10 : 2,
               } as React.CSSProperties}
             >
-              {/* Tape on note */}
-              <span
-                className={`tape ${colorTape(note.color)}`}
-                style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 48, height: 15, borderRadius: 2 }}
-              />
+              <span className={`tape ${colorTape(note.color)}`}
+                style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 48, height: 15, borderRadius: 2 }} />
 
-              <div style={{
-                background: colorBg(note.color),
-                border: "1.5px solid var(--ink)",
-                boxShadow: "3px 4px 0 rgba(28,28,28,0.12)",
-                padding: "22px 14px 12px",
-                position: "relative",
-              }}>
-                {/* Delete button */}
-                {(isOwner || currentUser?.id === note.user_id) && (
-                  <button onClick={() => deleteNote(note.id)}
-                    style={{ position: "absolute", top: 6, right: 6, background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", padding: 2, display: "flex", alignItems: "center", opacity: 0.6 }}
-                    onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-                    onMouseLeave={e => (e.currentTarget.style.opacity = "0.6")}>
-                    <Trash2 size={12} />
-                  </button>
+              <div style={{ background: colorBg(note.color), border: "1.5px solid var(--ink)", boxShadow: "3px 4px 0 rgba(28,28,28,0.12)", padding: "22px 14px 12px", position: "relative" }}>
+
+                {/* Action buttons — delete + edit */}
+                <div style={{ position: "absolute", top: 5, right: 5, display: "flex", gap: 2 }}>
+                  {(isOwner || currentUser?.id === note.user_id) && editingId !== note.id && (
+                    <button onClick={() => startEdit(note)}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", padding: 2, display: "flex", alignItems: "center", opacity: 0.5 }}
+                      onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+                      onMouseLeave={e => (e.currentTarget.style.opacity = "0.5")}>
+                      <Pencil size={11} />
+                    </button>
+                  )}
+                  {(isOwner || currentUser?.id === note.user_id) && (
+                    <button onClick={() => deleteNote(note.id)}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", padding: 2, display: "flex", alignItems: "center", opacity: 0.5 }}
+                      onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+                      onMouseLeave={e => (e.currentTarget.style.opacity = "0.5")}>
+                      <Trash2 size={11} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Note content — editable inline or display */}
+                {editingId === note.id ? (
+                  <textarea
+                    autoFocus
+                    value={editText}
+                    onChange={e => setEditText(e.target.value.slice(0, LIMITS.noteContent.max))}
+                    onBlur={() => saveEdit(note.id)}
+                    onKeyDown={e => { if (e.key === "Enter" && e.metaKey) { e.preventDefault(); saveEdit(note.id); } if (e.key === "Escape") { setEditingId(null); } }}
+                    style={{ width: "100%", background: "rgba(255,255,255,0.5)", border: "1.5px solid var(--ink)", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", fontWeight: 700, color: "var(--ink)", lineHeight: 1.6, resize: "none", outline: "none", padding: 4, minHeight: 60 }}
+                    rows={3}
+                  />
+                ) : (
+                  /* Issue #3 — font-weight 700 makes text bold and easy to read */
+                  <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", fontWeight: 700, color: "var(--ink)", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>
+                    {note.content}
+                  </p>
                 )}
-
-                <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.95rem", color: "var(--ink)", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>
-                  {note.content}
-                </p>
 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10, paddingTop: 8, borderTop: "1px dashed rgba(28,28,28,0.18)" }}>
                   <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.72rem", color: "var(--ink3)" }}>— {note.author_name}</span>
                   <button onClick={() => upvote(note)}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 4,
-                      background: voted.has(note.id) ? "rgba(28,28,28,0.1)" : "none",
-                      border: "1px solid rgba(28,28,28,0.15)",
-                      borderRadius: 20, padding: "2px 8px", cursor: voted.has(note.id) ? "default" : "pointer",
-                      fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: "var(--ink2)",
-                      transition: "background 0.15s",
-                    }}>
+                    style={{ display: "flex", alignItems: "center", gap: 4, background: voted.has(note.id) ? "rgba(28,28,28,0.1)" : "none", border: "1px solid rgba(28,28,28,0.15)", borderRadius: 20, padding: "2px 8px", cursor: voted.has(note.id) ? "default" : "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: "var(--ink2)", transition: "background 0.15s" }}>
                     <ThumbsUp size={11} style={{ color: voted.has(note.id) ? "var(--ink)" : "var(--ink3)" }} />
                     {note.upvotes}
                   </button>
