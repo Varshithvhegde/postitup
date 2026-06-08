@@ -78,9 +78,15 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
   /* ── Dragging notes or rating cards ── */
   const dragging = useRef<{ id: string; type: "note" | "rating"; ox: number; oy: number; startX: number; startY: number; finalX: number; finalY: number } | null>(null);
 
-  /* ── Inline editing ── */
+  /* ── Inline editing — notes ── */
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+
+  /* ── Inline editing — ratings ── */
+  const [editingRatingId, setEditingRatingId] = useState<string | null>(null);
+  const [editRatingText, setEditRatingText] = useState("");
+  const [editRatingStars, setEditRatingStars] = useState(0);
+  const [editRatingHover, setEditRatingHover] = useState(0);
 
   /* ── Voted set ── */
   const [voted, setVoted] = useState<Set<string>>(new Set());
@@ -275,6 +281,19 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
     await supabase.from("notes").update({ content: clean }).eq("id", id);
   };
 
+  const startEditRating = (r: Rating) => {
+    setEditingRatingId(r.id);
+    setEditRatingText(r.review ?? "");
+    setEditRatingStars(r.stars);
+  };
+
+  const saveRatingEdit = async (id: string) => {
+    const clean = sanitizeText(editRatingText).trim();
+    setEditingRatingId(null);
+    setRatings(rs => rs.map(r => r.id === id ? { ...r, review: clean || null, stars: editRatingStars } : r));
+    await supabase.from("ratings").update({ review: clean || null, stars: editRatingStars }).eq("id", id);
+  };
+
   /* ── Upvote — calls secure DB function, never touches upvotes column directly ── */
   const upvote = async (note: Note) => {
     const fp = getFingerprint();
@@ -404,42 +423,80 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
             <div
               key={r.id}
               className="note-card note-enter"
-              onMouseDown={e => onRatingMouseDown(e, r)}
+              onMouseDown={e => editingRatingId === r.id ? e.stopPropagation() : onRatingMouseDown(e, r)}
               style={{
                 position: "absolute",
                 left: r.x, top: r.y,
                 width: r.width,
                 transform: `rotate(${r.rotation}deg)`,
-                cursor: "grab",
+                cursor: editingRatingId === r.id ? "default" : "grab",
                 userSelect: "none",
-                zIndex: 2,
+                zIndex: editingRatingId === r.id ? 10 : 2,
               }}
             >
               <span className="tape tape-y" style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 48, height: 15, borderRadius: 2 }} />
               <div style={{ background: "var(--sticky-y)", border: "1.5px solid var(--ink)", boxShadow: "3px 4px 0 rgba(28,28,28,0.12)", padding: "22px 14px 12px", position: "relative" }}>
-                {(isOwner || currentUser?.id === r.user_id) && (
-                  <button onClick={() => deleteRating(r.id)}
-                    style={{ position: "absolute", top: 6, right: 6, background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", padding: 2, opacity: 0.6 }}
-                    onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-                    onMouseLeave={e => (e.currentTarget.style.opacity = "0.6")}>
-                    <Trash2 size={12} />
-                  </button>
-                )}
-                {/* Stars */}
-                <div style={{ display: "flex", gap: 2, marginBottom: 6 }}>
+
+                {/* Action buttons */}
+                <div style={{ position: "absolute", top: 5, right: 5, display: "flex", gap: 2 }}>
+                  {(isOwner || currentUser?.id === r.user_id) && editingRatingId !== r.id && (
+                    <button onClick={() => startEditRating(r)}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", padding: 2, opacity: 0.5 }}
+                      onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+                      onMouseLeave={e => (e.currentTarget.style.opacity = "0.5")}>
+                      <Pencil size={11} />
+                    </button>
+                  )}
+                  {(isOwner || currentUser?.id === r.user_id) && (
+                    <button onClick={() => deleteRating(r.id)}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", padding: 2, opacity: 0.5 }}
+                      onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+                      onMouseLeave={e => (e.currentTarget.style.opacity = "0.5")}>
+                      <Trash2 size={11} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Stars — editable when in edit mode */}
+                <div style={{ display: "flex", gap: 3, marginBottom: 6 }}>
                   {[1,2,3,4,5].map(s => (
-                    <Star key={s} size={14}
-                      fill={s <= r.stars ? "#f59e0b" : "none"}
-                      stroke={s <= r.stars ? "#f59e0b" : "rgba(28,28,28,0.25)"}
-                      strokeWidth={1.8}
-                    />
+                    <button key={s} type="button"
+                      onClick={() => editingRatingId === r.id && setEditRatingStars(s)}
+                      onMouseEnter={() => editingRatingId === r.id && setEditRatingHover(s)}
+                      onMouseLeave={() => setEditRatingHover(0)}
+                      style={{ background: "none", border: "none", padding: 0, cursor: editingRatingId === r.id ? "pointer" : "default", transform: editingRatingId === r.id && editRatingHover === s ? "scale(1.2)" : "scale(1)", transition: "transform 0.1s" }}>
+                      <Star size={14}
+                        fill={s <= (editingRatingId === r.id ? (editRatingHover || editRatingStars) : r.stars) ? "#f59e0b" : "none"}
+                        stroke={s <= (editingRatingId === r.id ? (editRatingHover || editRatingStars) : r.stars) ? "#f59e0b" : "rgba(28,28,28,0.25)"}
+                        strokeWidth={1.8}
+                      />
+                    </button>
                   ))}
                 </div>
-                {r.review && (
-                  <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink)", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>
-                    {r.review}
-                  </p>
+
+                {/* Review text — editable inline */}
+                {editingRatingId === r.id ? (
+                  <>
+                    <textarea
+                      autoFocus
+                      value={editRatingText}
+                      onChange={e => setEditRatingText(e.target.value.slice(0, 300))}
+                      onBlur={() => saveRatingEdit(r.id)}
+                      onKeyDown={e => { if (e.key === "Enter" && e.metaKey) { e.preventDefault(); saveRatingEdit(r.id); } if (e.key === "Escape") setEditingRatingId(null); }}
+                      placeholder="Add a review…"
+                      rows={3}
+                      style={{ width: "100%", background: "rgba(255,255,255,0.5)", border: "1.5px solid var(--ink)", fontFamily: "var(--font-kalam), serif", fontSize: "0.95rem", fontWeight: 700, color: "var(--ink)", lineHeight: 1.6, resize: "none", outline: "none", padding: 4 }}
+                    />
+                    <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.68rem", color: "var(--ink3)", marginTop: 4 }}>⌘+Enter to save · Esc to cancel</p>
+                  </>
+                ) : (
+                  r.review && (
+                    <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.95rem", fontWeight: 700, color: "var(--ink)", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>
+                      {r.review}
+                    </p>
+                  )
                 )}
+
                 <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px dashed rgba(28,28,28,0.18)" }}>
                   <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.72rem", color: "var(--ink3)" }}>— {r.author_name}</span>
                 </div>
