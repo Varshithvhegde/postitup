@@ -1,40 +1,8 @@
-"use client";
-import { useEffect } from "react";
-
-declare global {
-  interface Window {
-    kofiwidget2: {
-      init: (text: string, color: string, id: string) => void;
-      draw: () => void;
-    };
-  }
-}
-
 interface Props {
   size?: "sm" | "md";
 }
 
 export default function KofiButton({ size = "md" }: Props) {
-  const containerId = `kofi-${size}`;
-
-  useEffect(() => {
-    // Load Ko-fi widget script once
-    if (document.querySelector('script[src*="ko-fi"]')) {
-      if (window.kofiwidget2) {
-        window.kofiwidget2.init("Support me on Ko-fi", "#72a4f2", "Z0P8212FIO");
-        window.kofiwidget2.draw();
-      }
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = "https://storage.ko-fi.com/cdn/widget/Widget_2.js";
-    script.type = "text/javascript";
-    script.onload = () => {
-      window.kofiwidget2.init("Support me on Ko-fi", "#72a4f2", "Z0P8212FIO");
-      window.kofiwidget2.draw();
-    };
-    document.head.appendChild(script);
-  }, []);
 
   // Render a clean paper-styled link instead of the widget
   // (the widget injects its own iframe which clashes with our CSS)
