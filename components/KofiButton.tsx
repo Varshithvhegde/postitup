@@ -43,7 +43,7 @@ export default function KofiButton({ size = "md" }: Props) {
         alt="Ko-fi"
         style={{ width: isSmall ? 14 : 18, height: isSmall ? 14 : 18, objectFit: "contain" }}
       />
-      <span>{isSmall ? "Ko-fi ☕" : "Support me on Ko-fi"}</span>
+      <span>{isSmall ? "Support me on Ko-fi" : "Support me on Ko-fi"}</span>
     </a>
   );
 }
