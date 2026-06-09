@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { StickyNote, Users, Zap, Code2, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import KofiButton from "@/components/KofiButton";
 
 export default function LandingPage() {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -37,6 +38,7 @@ export default function LandingPage() {
             <span style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "1.4rem", fontWeight: 700, color: "var(--ink)" }}>PostItUp</span>
           </span>
           <div className="flex items-center gap-4">
+            <KofiButton size="sm" />
             {loggedIn ? (
               <>
                 <Link href="/new" style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink2)", textDecoration: "none" }}>
