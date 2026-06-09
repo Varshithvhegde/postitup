@@ -8,6 +8,7 @@ import {
   Settings, ChevronLeft, Copy, Check, Star, Pencil,
 } from "lucide-react";
 import RatingsPanel from "@/components/canvas/RatingsPanel";
+import KofiButton from "@/components/KofiButton";
 
 /* ── Color palette ── */
 const COLORS: { value: NoteColor; label: string; bg: string; tape: string }[] = [
@@ -448,6 +449,9 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {/* Ko-fi support */}
+          <KofiButton size="sm" />
+
           {/* Issue #1 — GitHub link for feedback/issues */}
           <a href="https://github.com/Varshithvhegde/postitup/issues" target="_blank" rel="noopener noreferrer"
             title="Report an issue or request a feature on GitHub"

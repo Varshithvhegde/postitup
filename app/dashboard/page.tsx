@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Plus, LogOut } from "lucide-react";
 import type { Board } from "@/types";
 import BoardCard from "@/components/BoardCard";
+import KofiButton from "@/components/KofiButton";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -28,6 +29,7 @@ export default async function DashboardPage() {
             <span style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "1.3rem", fontWeight: 700, color: "var(--ink)" }}>PostItUp</span>
           </Link>
           <div className="flex items-center gap-4">
+            <KofiButton size="sm" />
             <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink2)" }}>{user.email}</span>
             <Link href="/account" style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink2)", textDecoration: "none" }}>Account</Link>
             <form action="/auth/signout" method="post">
