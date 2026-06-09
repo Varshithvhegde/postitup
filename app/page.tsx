@@ -221,6 +221,16 @@ export default function LandingPage() {
         <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "var(--ink3)" }}>
           ✏️ PostItUp — built with paper &amp; code
         </p>
+        <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.82rem", color: "var(--ink3)", marginTop: 6 }}>
+          Built by{" "}
+          <a href="https://varshithvhegde.in" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink2)", textDecoration: "none", borderBottom: "1px dashed var(--ink3)" }}>
+            Varshith V Hegde
+          </a>
+          {" · "}
+          <a href="https://github.com/VarshithVHegde" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink2)", textDecoration: "none", borderBottom: "1px dashed var(--ink3)" }}>
+            GitHub
+          </a>
+        </p>
       </footer>
     </main>
   );
