@@ -10,16 +10,31 @@ import {
 import RatingsPanel from "@/components/canvas/RatingsPanel";
 import KofiButton from "@/components/KofiButton";
 
-/* ── Color palette ── */
-const COLORS: { value: NoteColor; label: string; bg: string; tape: string }[] = [
-  { value: "yellow", label: "Yellow", bg: "var(--sticky-y)", tape: "tape-y" },
-  { value: "blue",   label: "Blue",   bg: "var(--sticky-b)", tape: "tape-b" },
-  { value: "pink",   label: "Pink",   bg: "var(--sticky-p)", tape: "tape-p" },
-  { value: "green",  label: "Green",  bg: "var(--sticky-g)", tape: "tape-g" },
-  { value: "orange", label: "Orange", bg: "var(--sticky-o)", tape: "tape-o" },
-];
-const colorBg = (c: NoteColor) => COLORS.find(x => x.value === c)?.bg ?? "var(--sticky-y)";
-const colorTape = (c: NoteColor) => COLORS.find(x => x.value === c)?.tape ?? "tape-y";
+/* ── Color helpers — support both legacy named colors and hex values ── */
+const LEGACY: Record<string, string> = {
+  yellow: "#fef9c3", blue: "#dbeafe", pink: "#fce7f3",
+  green: "#dcfce7", orange: "#ffedd5",
+};
+// 5 quick-pick presets shown as swatches
+const PRESETS = ["#fef9c3","#dbeafe","#fce7f3","#dcfce7","#ffedd5",
+                 "#f0fdf4","#fdf2f8","#eff6ff","#fff7ed","#f0f9ff"];
+
+function colorBg(c: NoteColor): string {
+  return LEGACY[c] ?? c;  // hex passthrough, named fallback
+}
+function colorTape(c: NoteColor): string {
+  const bg = colorBg(c);
+  // pick nearest tape class by hue
+  if (!bg.startsWith("#")) return "tape-y";
+  const r = parseInt(bg.slice(1,3),16);
+  const g = parseInt(bg.slice(3,5),16);
+  const b = parseInt(bg.slice(5,7),16);
+  if (b > r && b > g) return "tape-b";
+  if (r > g && r > b) return "tape-p";
+  if (g > r && g > b) return "tape-g";
+  if (r > 220 && g > 200 && b < 180) return "tape-y";
+  return "tape-o";
+}
 
 /* ── Grid snap helper ── */
 const GRID = 32;
@@ -758,12 +773,25 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
                   </span>
                 </div>
 
-                {/* Color picker */}
-                <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-                  {COLORS.map(c => (
-                    <button key={c.value} onClick={() => setNewColor(c.value)}
-                      style={{ width: 26, height: 26, background: c.bg, border: newColor === c.value ? "2.5px solid var(--ink)" : "1.5px solid rgba(28,28,28,0.2)", cursor: "pointer", transform: newColor === c.value ? "scale(1.15)" : "scale(1)", transition: "transform 0.15s", borderRadius: 2 }} />
-                  ))}
+                {/* Color picker — presets + custom */}
+                <div style={{ marginBottom: 14 }}>
+                  <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: "var(--ink3)", marginBottom: 6 }}>Note color</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                    {PRESETS.map(hex => (
+                      <button key={hex} onClick={() => setNewColor(hex)}
+                        title={hex}
+                        style={{ width: 24, height: 24, background: hex, border: newColor === hex ? "2.5px solid var(--ink)" : "1.5px solid rgba(28,28,28,0.2)", cursor: "pointer", transform: newColor === hex ? "scale(1.2)" : "scale(1)", transition: "transform 0.15s", borderRadius: 2, flexShrink: 0 }} />
+                    ))}
+                    {/* Custom color input */}
+                    <label title="Custom color" style={{ position: "relative", width: 24, height: 24, cursor: "pointer", flexShrink: 0 }}>
+                      <div style={{ width: 24, height: 24, background: !PRESETS.includes(newColor) ? newColor : "transparent", border: "1.5px dashed rgba(28,28,28,0.35)", borderRadius: 2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.7rem", color: "var(--ink3)", overflow: "hidden" }}>
+                        {PRESETS.includes(newColor) ? "＋" : null}
+                      </div>
+                      <input type="color" value={PRESETS.includes(newColor) ? "#ffffff" : newColor}
+                        onChange={e => setNewColor(e.target.value)}
+                        style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }} />
+                    </label>
+                  </div>
                 </div>
 
                 {/* Star rating — only when board has ratings enabled */}

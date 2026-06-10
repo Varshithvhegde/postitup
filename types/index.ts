@@ -1,6 +1,6 @@
 export type BoardMode = "free" | "grid" | "ruled";
 export type BoardVisibility = "public" | "link" | "private";
-export type NoteColor = "yellow" | "blue" | "pink" | "green" | "orange";
+export type NoteColor = string; // hex (#fef9c3) or legacy named color
 
 export interface Board {
   id: string;

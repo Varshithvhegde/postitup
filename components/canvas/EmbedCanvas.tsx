@@ -5,15 +5,26 @@ import type { Board, Note, NoteColor, Rating } from "@/types";
 import { sanitizeText, validateNoteContent, validateAuthorName, LIMITS } from "@/lib/sanitize";
 import { Plus, X, ThumbsUp, Trash2, Star } from "lucide-react";
 
-const COLORS: { value: NoteColor; bg: string; tape: string }[] = [
-  { value: "yellow", bg: "var(--sticky-y)", tape: "tape-y" },
-  { value: "blue",   bg: "var(--sticky-b)", tape: "tape-b" },
-  { value: "pink",   bg: "var(--sticky-p)", tape: "tape-p" },
-  { value: "green",  bg: "var(--sticky-g)", tape: "tape-g" },
-  { value: "orange", bg: "var(--sticky-o)", tape: "tape-o" },
-];
-const colorBg   = (c: NoteColor) => COLORS.find(x => x.value === c)?.bg   ?? "var(--sticky-y)";
-const colorTape = (c: NoteColor) => COLORS.find(x => x.value === c)?.tape ?? "tape-y";
+const LEGACY: Record<string, string> = {
+  yellow: "#fef9c3", blue: "#dbeafe", pink: "#fce7f3",
+  green: "#dcfce7", orange: "#ffedd5",
+};
+const PRESETS = ["#fef9c3","#dbeafe","#fce7f3","#dcfce7","#ffedd5",
+                 "#f0fdf4","#fdf2f8","#eff6ff","#fff7ed","#f0f9ff"];
+
+function colorBg(c: NoteColor): string { return LEGACY[c] ?? c; }
+function colorTape(c: NoteColor): string {
+  const bg = colorBg(c);
+  if (!bg.startsWith("#")) return "tape-y";
+  const r = parseInt(bg.slice(1,3),16);
+  const g = parseInt(bg.slice(3,5),16);
+  const b = parseInt(bg.slice(5,7),16);
+  if (b > r && b > g) return "tape-b";
+  if (r > g && r > b) return "tape-p";
+  if (g > r && g > b) return "tape-g";
+  if (r > 220 && g > 200 && b < 180) return "tape-y";
+  return "tape-o";
+}
 
 const GRID = 32;
 function snap(v: number, mode: Board["mode"]) {
@@ -360,12 +371,20 @@ export default function EmbedCanvas({ board, initialNotes, initialRatings, curre
                   <span style={{ position: "absolute", bottom: 5, right: 7, fontSize: "0.68rem", color: "var(--ink3)" }}>{newText.length}/{LIMITS.noteContent.max}</span>
                 </div>
 
-                {/* Color picker */}
-                <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                  {COLORS.map(c => (
-                    <button key={c.value} onClick={() => setNewColor(c.value)}
-                      style={{ width: 22, height: 22, background: c.bg, border: newColor === c.value ? "2.5px solid var(--ink)" : "1.5px solid rgba(28,28,28,0.2)", cursor: "pointer", borderRadius: 2, transform: newColor === c.value ? "scale(1.15)" : "scale(1)", transition: "transform 0.15s" }} />
+                {/* Color picker — presets + custom */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 10, alignItems: "center" }}>
+                  {PRESETS.map(hex => (
+                    <button key={hex} onClick={() => setNewColor(hex)}
+                      style={{ width: 22, height: 22, background: hex, border: newColor === hex ? "2.5px solid var(--ink)" : "1.5px solid rgba(28,28,28,0.2)", cursor: "pointer", borderRadius: 2, transform: newColor === hex ? "scale(1.2)" : "scale(1)", transition: "transform 0.15s", flexShrink: 0 }} />
                   ))}
+                  <label style={{ position: "relative", width: 22, height: 22, cursor: "pointer", flexShrink: 0 }}>
+                    <div style={{ width: 22, height: 22, background: !PRESETS.includes(newColor) ? newColor : "transparent", border: "1.5px dashed rgba(28,28,28,0.35)", borderRadius: 2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.65rem", color: "var(--ink3)" }}>
+                      {PRESETS.includes(newColor) ? "＋" : null}
+                    </div>
+                    <input type="color" value={PRESETS.includes(newColor) ? "#ffffff" : newColor}
+                      onChange={e => setNewColor(e.target.value)}
+                      style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }} />
+                  </label>
                 </div>
 
                 {/* Star rating — only when enabled */}
