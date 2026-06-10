@@ -601,7 +601,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
                 )}
 
                 <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px dashed rgba(28,28,28,0.18)" }}>
-                  <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.72rem", color: "var(--ink3)" }}>— {r.author_name}</span>
+                  <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", fontWeight: 700, color: "var(--ink2)" }}>— {r.author_name}</span>
                 </div>
               </div>
             </div>
@@ -661,13 +661,13 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
                   />
                 ) : (
                   /* Issue #3 — font-weight 700 makes text bold and easy to read */
-                  <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", fontWeight: 700, color: "var(--ink)", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>
+                  <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", fontWeight: 400, color: "var(--ink)", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>
                     {note.content}
                   </p>
                 )}
 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10, paddingTop: 8, borderTop: "1px dashed rgba(28,28,28,0.18)" }}>
-                  <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.72rem", color: "var(--ink3)" }}>— {note.author_name}</span>
+                  <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", fontWeight: 700, color: "var(--ink2)" }}>— {note.author_name}</span>
                   <button onClick={() => upvote(note)}
                     style={{ display: "flex", alignItems: "center", gap: 4, background: voted.has(note.id) ? "rgba(28,28,28,0.1)" : "none", border: "1px solid rgba(28,28,28,0.15)", borderRadius: 20, padding: "2px 8px", cursor: voted.has(note.id) ? "default" : "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: "var(--ink2)", transition: "background 0.15s" }}>
                     <ThumbsUp size={11} style={{ color: voted.has(note.id) ? "var(--ink)" : "var(--ink3)" }} />

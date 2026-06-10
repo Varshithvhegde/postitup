@@ -299,7 +299,7 @@ export default function EmbedCanvas({ board, initialNotes, initialRatings, curre
                 </div>
                 {r.review && <p style={{ fontSize: "0.88rem", color: "var(--ink)", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{r.review}</p>}
                 <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px dashed rgba(28,28,28,0.18)" }}>
-                  <span style={{ fontSize: "0.68rem", color: "var(--ink3)" }}>— {r.author_name}</span>
+                  <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--ink2)" }}>— {r.author_name}</span>
                 </div>
               </div>
             </div>
@@ -315,7 +315,7 @@ export default function EmbedCanvas({ board, initialNotes, initialRatings, curre
               <div style={{ background: colorBg(note.color), border: "1.5px solid var(--ink)", boxShadow: "2px 3px 0 rgba(28,28,28,0.1)", padding: "20px 12px 10px" }}>
                 <p style={{ fontSize: "0.9rem", color: "var(--ink)", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{note.content}</p>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8, paddingTop: 6, borderTop: "1px dashed rgba(28,28,28,0.18)" }}>
-                  <span style={{ fontSize: "0.68rem", color: "var(--ink3)" }}>— {note.author_name}</span>
+                  <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--ink2)" }}>— {note.author_name}</span>
                   <button onClick={() => upvote(note)}
                     style={{ display: "flex", alignItems: "center", gap: 3, background: voted.has(note.id) ? "rgba(28,28,28,0.1)" : "none", border: "1px solid rgba(28,28,28,0.15)", borderRadius: 20, padding: "2px 7px", cursor: voted.has(note.id) ? "default" : "pointer", fontSize: "0.72rem", color: "var(--ink2)", fontFamily: "inherit" }}>
                     <ThumbsUp size={10} /> {note.upvotes}
