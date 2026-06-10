@@ -97,6 +97,8 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
 
   /* ── Settings panel ── */
   const [showSettings, setShowSettings] = useState(false);
+  /* ── Mobile toolbar overflow menu ── */
+  const [mobileMenu, setMobileMenu] = useState(false);
 
   /* ── Realtime subscription ── */
   useEffect(() => {
@@ -280,8 +282,8 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
         }
         lastTap.current = now;
         touchPanStart.current = { tx: t.clientX, ty: t.clientY, px: pan.x, py: pan.y };
-        // Don't block scroll for canvas pan — let user scroll the page naturally
-        isTouchDragging.current = false;
+        // background touch = canvas pan, block page scroll
+        isTouchDragging.current = true;
         return;
       }
     }
@@ -311,7 +313,11 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
         }
         return;
       }
-      // Background pan — let page scroll happen naturally, don't update pan
+      // Background pan
+      setPan({
+        x: touchPanStart.current.px + (t.clientX - touchPanStart.current.tx),
+        y: touchPanStart.current.py + (t.clientY - touchPanStart.current.ty),
+      });
     }
   }, [scale, board.mode]);
 
@@ -449,64 +455,65 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
       </svg>
 
       {/* ── Toolbar ── */}
-      <div style={{ height: 52, flexShrink: 0, borderBottom: "1.5px solid rgba(28,28,28,0.12)", background: "rgba(250,249,246,0.95)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", zIndex: 50 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <a href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--ink2)", textDecoration: "none", fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem" }}>
-            <ChevronLeft size={16} /> Back
-          </a>
-          <div style={{ width: 1, height: 20, background: "rgba(28,28,28,0.15)" }} />
-          <span style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "1.1rem", color: "var(--ink)", fontWeight: 700 }}>{board.title}</span>
-          {board.prompt && (
-            <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.82rem", color: "var(--ink3)", maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              — {board.prompt}
+      <div style={{ flexShrink: 0, borderBottom: "1.5px solid rgba(28,28,28,0.12)", background: "rgba(250,249,246,0.95)", backdropFilter: "blur(6px)", zIndex: 50 }}>
+        <div style={{ height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px", gap: 8 }}>
+          {/* Left: back + title */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
+            <a href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--ink2)", textDecoration: "none", fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", flexShrink: 0 }}>
+              <ChevronLeft size={16} /> Back
+            </a>
+            <div style={{ width: 1, height: 20, background: "rgba(28,28,28,0.15)", flexShrink: 0 }} />
+            <span style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink)", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {board.title}
             </span>
-          )}
+          </div>
+
+          {/* Right: always-visible actions */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            {/* Add note — always visible */}
+            <button onClick={() => { setAddPos({ x: Math.max(60, 120 - pan.x / scale), y: Math.max(60, 80 - pan.y / scale) }); setShowAddForm(true); }}
+              style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", background: "var(--ink)", border: "none", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.88rem", color: "white" }}>
+              <Plus size={14} /> {board.enable_ratings ? "Add" : "Add note"}
+            </button>
+
+            {/* Share — always visible */}
+            <button onClick={copyLink}
+              style={{ display: "flex", alignItems: "center", padding: "7px 10px", background: copied ? "var(--sticky-g)" : "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", cursor: "pointer", color: "var(--ink)", transition: "background 0.2s" }}>
+              {copied ? <Check size={15} /> : <Copy size={15} />}
+            </button>
+
+            {/* ⋯ overflow menu — hides on desktop, shows on mobile via JS */}
+            <button onClick={() => setMobileMenu(m => !m)}
+              style={{ display: "flex", alignItems: "center", padding: "7px 8px", background: mobileMenu ? "var(--sticky-y)" : "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", cursor: "pointer", color: "var(--ink)" }}
+              aria-label="More options">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="13" cy="8" r="1.5"/></svg>
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {/* Ko-fi support */}
-          <KofiButton size="sm" />
-
-          {/* Issue #1 — GitHub link for feedback/issues */}
-          <a href="https://github.com/Varshithvhegde/postitup/issues" target="_blank" rel="noopener noreferrer"
-            title="Report an issue or request a feature on GitHub"
-            style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", background: "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", color: "var(--ink2)", textDecoration: "none", fontFamily: "var(--font-kalam), serif", fontSize: "0.82rem", transition: "color 0.15s" }}
-            onMouseEnter={e => (e.currentTarget.style.color = "var(--ink)")}
-            onMouseLeave={e => (e.currentTarget.style.color = "var(--ink2)")}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-            Feedback
-          </a>
-
-          {/* Copy link */}
-          <button onClick={copyLink}
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", background: copied ? "var(--sticky-g)" : "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.88rem", color: "var(--ink)", transition: "background 0.2s" }}>
-            {copied ? <Check size={14} /> : <Copy size={14} />}
-            {copied ? "Copied!" : "Share"}
-          </button>
-
-          {/* Unified add button — opens modal with Note/Review tabs */}
-          <button onClick={() => {
-            setAddPos({ x: Math.max(60, 120 - pan.x / scale), y: Math.max(60, 80 - pan.y / scale) });
-            setShowAddForm(true);
-          }}
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", background: "var(--ink)", border: "none", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.95rem", color: "white" }}>
-            <Plus size={15} /> {board.enable_ratings ? "Add" : "Add note"}
-          </button>
-
-          {isOwner && (
-            <>
-              <a href={`/board/${board.slug}/settings`}
-                style={{ padding: "6px 12px", background: "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", cursor: "pointer", color: "var(--ink2)", display: "flex", alignItems: "center", gap: 5, textDecoration: "none", fontFamily: "var(--font-kalam), serif", fontSize: "0.88rem" }}>
-                <Settings size={14} /> Settings
-              </a>
-              <button onClick={() => setShowSettings(s => !s)}
-                style={{ padding: "6px 10px", background: showSettings ? "var(--sticky-b)" : "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", cursor: "pointer", color: "var(--ink)", display: "flex", alignItems: "center" }}
-                title="Embed code">
-                <LinkIcon size={15} />
-              </button>
-            </>
-          )}
-        </div>
+        {/* Overflow menu dropdown */}
+        {mobileMenu && (
+          <div style={{ borderTop: "1px solid rgba(28,28,28,0.1)", background: "rgba(250,249,246,0.98)", padding: "8px 12px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+            <KofiButton size="sm" />
+            <a href="https://github.com/Varshithvhegde/postitup/issues" target="_blank" rel="noopener noreferrer"
+              style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 12px", background: "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", color: "var(--ink2)", textDecoration: "none", fontFamily: "var(--font-kalam), serif", fontSize: "0.88rem" }}>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+              Feedback / Report issue
+            </a>
+            {isOwner && (
+              <>
+                <a href={`/board/${board.slug}/settings`}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 12px", background: "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", color: "var(--ink2)", textDecoration: "none", fontFamily: "var(--font-kalam), serif", fontSize: "0.88rem" }}>
+                  <Settings size={14} /> Board settings
+                </a>
+                <button onClick={() => { setShowSettings(s => !s); setMobileMenu(false); }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 12px", background: showSettings ? "var(--sticky-b)" : "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.88rem", color: "var(--ink)" }}>
+                  <LinkIcon size={14} /> Embed code
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── Canvas area ── */}
