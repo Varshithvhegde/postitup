@@ -455,7 +455,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
       </svg>
 
       {/* ── Toolbar ── */}
-      <div style={{ flexShrink: 0, borderBottom: "1.5px solid rgba(28,28,28,0.12)", background: "rgba(250,249,246,0.95)", backdropFilter: "blur(6px)", zIndex: 50 }}>
+      <div style={{ flexShrink: 0, borderBottom: "1.5px solid rgba(28,28,28,0.12)", background: "rgba(250,249,246,0.95)", backdropFilter: "blur(6px)", zIndex: 50, position: "relative" }}>
         <div style={{ height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px", gap: 8 }}>
           {/* Left: back + title */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
@@ -491,23 +491,31 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
           </div>
         </div>
 
-        {/* Overflow menu dropdown */}
+        {/* Overflow menu dropdown — floats over canvas */}
         {mobileMenu && (
-          <div style={{ borderTop: "1px solid rgba(28,28,28,0.1)", background: "rgba(250,249,246,0.98)", padding: "8px 12px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ position: "absolute", top: 52, right: 8, zIndex: 60, minWidth: 220, background: "rgba(250,249,246,0.98)", border: "1.5px solid rgba(28,28,28,0.15)", boxShadow: "4px 5px 0 rgba(28,28,28,0.12)", padding: "8px", display: "flex", flexDirection: "column", gap: 6 }}>
             <KofiButton size="sm" />
             <a href="https://github.com/Varshithvhegde/postitup/issues" target="_blank" rel="noopener noreferrer"
-              style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 12px", background: "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", color: "var(--ink2)", textDecoration: "none", fontFamily: "var(--font-kalam), serif", fontSize: "0.88rem" }}>
+              onClick={() => setMobileMenu(false)}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", color: "var(--ink2)", textDecoration: "none", fontFamily: "var(--font-kalam), serif", fontSize: "0.88rem", borderRadius: 2, background: "none" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "var(--paper2)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "none")}>
               <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-              Feedback / Report issue
+              Feedback
             </a>
             {isOwner && (
               <>
                 <a href={`/board/${board.slug}/settings`}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 12px", background: "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", color: "var(--ink2)", textDecoration: "none", fontFamily: "var(--font-kalam), serif", fontSize: "0.88rem" }}>
+                  onClick={() => setMobileMenu(false)}
+                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", color: "var(--ink2)", textDecoration: "none", fontFamily: "var(--font-kalam), serif", fontSize: "0.88rem", background: "none" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "var(--paper2)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "none")}>
                   <Settings size={14} /> Board settings
                 </a>
                 <button onClick={() => { setShowSettings(s => !s); setMobileMenu(false); }}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 12px", background: showSettings ? "var(--sticky-b)" : "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.88rem", color: "var(--ink)" }}>
+                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.88rem", color: "var(--ink2)", textAlign: "left" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "var(--paper2)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "none")}>
                   <LinkIcon size={14} /> Embed code
                 </button>
               </>
@@ -515,6 +523,11 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
           </div>
         )}
       </div>
+
+      {/* Backdrop to close mobile menu on canvas tap */}
+      {mobileMenu && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 55 }} onClick={() => setMobileMenu(false)} />
+      )}
 
       {/* ── Canvas area ── */}
       <div
