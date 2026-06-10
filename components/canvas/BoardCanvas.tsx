@@ -629,7 +629,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
                   </>
                 ) : (
                   r.review && (
-                    <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.95rem", fontWeight: 700, color: "var(--ink)", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>
+                    <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.95rem", fontWeight: 400, color: "var(--ink)", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>
                       {r.review}
                     </p>
                   )
