@@ -1,4 +1,4 @@
-export type BoardMode = "free" | "grid" | "ruled";
+export type BoardMode = "free" | "grid" | "ruled" | "lane";
 export type BoardVisibility = "public" | "link" | "private";
 export type NoteColor = string; // hex (#fef9c3) or legacy named color
 
@@ -44,7 +44,16 @@ export interface Note {
   author_name: string;
   user_id: string | null;
   upvotes: number;
+  lane_id: string | null;
+  lane_order: number;
   created_at: string;
+}
+
+export interface Lane {
+  id: string;
+  label: string;
+  color: string;
+  order: number;
 }
 
 export interface Profile {
