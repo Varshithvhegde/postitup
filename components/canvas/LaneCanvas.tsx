@@ -64,8 +64,13 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
   const [addError, setAddError]     = useState("");
   const [saving, setSaving]         = useState(false);
 
-  const [editingId, setEditingId]   = useState<string | null>(null);
+  // Full edit modal
+  const [editNote, setEditNote]     = useState<Note | null>(null);
   const [editText, setEditText]     = useState("");
+  const [editColor, setEditColor]   = useState<NoteColor>("#fef9c3");
+  const [editPriority, setEditPriority] = useState<"high"|"medium"|"low"|"">("");
+  const [editDueDate, setEditDueDate]   = useState("");
+  const [editSaving, setEditSaving]     = useState(false);
 
   const dragging = useRef<{ id: string; fromLane: string } | null>(null);
   const [dragOverLane, setDragOverLane] = useState<string | null>(null);
@@ -111,12 +116,29 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
     await supabase.from("notes").delete().eq("id", id);
   };
 
-  const saveEdit = async (id: string) => {
+  const openEdit = (note: Note) => {
+    setEditNote(note);
+    setEditText(note.content);
+    setEditColor(note.color);
+    setEditPriority((note.priority as "high"|"medium"|"low"|"") ?? "");
+    setEditDueDate(note.due_date ?? "");
+  };
+
+  const saveEdit = async () => {
+    if (!editNote) return;
     const clean = sanitizeText(editText).trim();
-    setEditingId(null);
     if (!clean) return;
-    setNotes(ns => ns.map(n => n.id === id ? { ...n, content: clean } : n));
-    await supabase.from("notes").update({ content: clean }).eq("id", id);
+    setEditSaving(true);
+    const update = {
+      content:  clean,
+      color:    editColor,
+      priority: editPriority || null,
+      due_date: editDueDate || null,
+    };
+    setNotes(ns => ns.map(n => n.id === editNote.id ? { ...n, ...update } : n));
+    await supabase.from("notes").update(update).eq("id", editNote.id);
+    setEditSaving(false);
+    setEditNote(null);
   };
 
   const upvote = async (note: Note) => {
@@ -284,10 +306,10 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
 
                     return (
                       <div key={note.id}
-                        draggable={editingId !== note.id}
+                        draggable
                         onDragStart={e => onDragStart(e, note)}
-                        style={{ background: colorBg(note.color), border: "1.5px solid var(--ink)", boxShadow: "2px 3px 0 rgba(28,28,28,0.1)", padding: "10px 10px 8px", position: "relative", cursor: editingId === note.id ? "default" : "grab", transition: "box-shadow 0.15s, transform 0.15s", userSelect: editingId === note.id ? "text" : "none" }}
-                        onMouseEnter={e => { if (editingId !== note.id) { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "3px 5px 0 rgba(28,28,28,0.14)"; } }}
+                        style={{ background: colorBg(note.color), border: "1.5px solid var(--ink)", boxShadow: "2px 3px 0 rgba(28,28,28,0.1)", padding: "10px 10px 8px", position: "relative", cursor: "grab", transition: "box-shadow 0.15s, transform 0.15s", userSelect: "none" }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "3px 5px 0 rgba(28,28,28,0.14)"; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.boxShadow = "2px 3px 0 rgba(28,28,28,0.1)"; }}
                       >
                         {/* Priority + actions row */}
@@ -298,8 +320,8 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
                             </span>
                           ) : <span />}
                           <div style={{ display: "flex", gap: 2 }}>
-                            {(isOwner || currentUser?.id === note.user_id) && editingId !== note.id && (
-                              <button onClick={() => { setEditingId(note.id); setEditText(note.content); }}
+                            {(isOwner || currentUser?.id === note.user_id) && (
+                              <button onClick={() => openEdit(note)}
                                 style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", padding: 2, opacity: 0.5 }}
                                 onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
                                 onMouseLeave={e => (e.currentTarget.style.opacity = "0.5")}>
@@ -318,19 +340,9 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
                         </div>
 
                         {/* Content */}
-                        {editingId === note.id ? (
-                          <textarea autoFocus value={editText}
-                            onChange={e => setEditText(e.target.value.slice(0, LIMITS.noteContent.max))}
-                            onBlur={() => saveEdit(note.id)}
-                            onKeyDown={e => { if (e.key === "Enter" && e.metaKey) { e.preventDefault(); saveEdit(note.id); } if (e.key === "Escape") setEditingId(null); }}
-                            style={{ width: "100%", background: "rgba(255,255,255,0.5)", border: "1.5px solid var(--ink)", fontFamily: "var(--font-kalam), serif", fontSize: "0.92rem", color: "var(--ink)", lineHeight: 1.5, resize: "none", outline: "none", padding: "4px 6px" }}
-                            rows={3}
-                          />
-                        ) : (
-                          <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.92rem", color: "var(--ink)", lineHeight: 1.55, margin: "0 0 8px 0", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                            {note.content}
-                          </p>
-                        )}
+                        <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.92rem", color: "var(--ink)", lineHeight: 1.55, margin: "0 0 8px 0", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                          {note.content}
+                        </p>
 
                         {/* Due date */}
                         {note.due_date && (
@@ -476,6 +488,101 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
                   </button>
                 </div>
                 <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.72rem", color: "var(--ink3)", marginTop: 8, textAlign: "center" }}>⌘+Enter to add</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit card modal ── */}
+      {editNote && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(28,28,28,0.35)", backdropFilter: "blur(3px)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+          onClick={() => setEditNote(null)}>
+          <div style={{ position: "relative", maxWidth: 400, width: "100%", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
+            <span className="tape tape-b" style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 56, height: 17, borderRadius: 2, zIndex: 10 }} />
+            <div className="sk" style={{ background: colorBg(editColor), padding: "28px 22px 22px" }}>
+              <div className="sk-b" />
+              <div className="sk-i">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <h3 style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "1.1rem", color: "var(--ink)" }}>Edit card</h3>
+                  <button onClick={() => setEditNote(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink2)" }}><X size={18} /></button>
+                </div>
+
+                {/* Content */}
+                <div style={{ position: "relative", marginBottom: 12 }}>
+                  <textarea autoFocus value={editText}
+                    onChange={e => setEditText(e.target.value.slice(0, LIMITS.noteContent.max))}
+                    onKeyDown={e => { if (e.key === "Enter" && e.metaKey) saveEdit(); }}
+                    placeholder="Card content" rows={3}
+                    style={{ width: "100%", padding: "10px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink)", outline: "none", resize: "vertical" }}
+                  />
+                  <span style={{ position: "absolute", bottom: 6, right: 8, fontFamily: "var(--font-kalam), serif", fontSize: "0.7rem", color: "var(--ink3)" }}>{editText.length}/{LIMITS.noteContent.max}</span>
+                </div>
+
+                {/* Priority */}
+                <div style={{ marginBottom: 12 }}>
+                  <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: "var(--ink3)", marginBottom: 6 }}>Priority</p>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {(["high", "medium", "low"] as const).map(p => (
+                      <button key={p} onClick={() => setEditPriority(editPriority === p ? "" : p)}
+                        style={{ flex: 1, padding: "5px", background: editPriority === p ? PRIORITY_CONFIG[p].bg : "white", border: editPriority === p ? `2px solid ${PRIORITY_CONFIG[p].color}` : "1.5px solid rgba(28,28,28,0.2)", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: editPriority === p ? PRIORITY_CONFIG[p].color : "var(--ink2)", fontWeight: editPriority === p ? 700 : 400, transition: "all 0.15s" }}>
+                        {PRIORITY_CONFIG[p].label}
+                      </button>
+                    ))}
+                    {editPriority && (
+                      <button onClick={() => setEditPriority("")}
+                        style={{ padding: "5px 8px", background: "white", border: "1.5px solid rgba(28,28,28,0.2)", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.75rem", color: "var(--ink3)" }}>
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Due date */}
+                <div style={{ marginBottom: 14 }}>
+                  <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: "var(--ink3)", marginBottom: 6 }}>Due date</p>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <input type="date" value={editDueDate} onChange={e => setEditDueDate(e.target.value)}
+                      style={{ flex: 1, padding: "7px 10px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink)", outline: "none" }} />
+                    {editDueDate && (
+                      <button onClick={() => setEditDueDate("")}
+                        style={{ padding: "7px 10px", background: "white", border: "1.5px solid rgba(28,28,28,0.2)", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.8rem", color: "var(--ink3)" }}>
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Color */}
+                <div style={{ marginBottom: 18 }}>
+                  <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: "var(--ink3)", marginBottom: 6 }}>Card color</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                    {PRESETS.map(hex => (
+                      <button key={hex} onClick={() => setEditColor(hex)}
+                        style={{ width: 22, height: 22, background: hex, border: editColor === hex ? "2.5px solid var(--ink)" : "1.5px solid rgba(28,28,28,0.2)", cursor: "pointer", borderRadius: 2, transform: editColor === hex ? "scale(1.2)" : "scale(1)", transition: "transform 0.15s" }} />
+                    ))}
+                    <label style={{ position: "relative", width: 22, height: 22, cursor: "pointer" }}>
+                      <div style={{ width: 22, height: 22, background: !PRESETS.includes(editColor) ? editColor : "transparent", border: "1.5px dashed rgba(28,28,28,0.35)", borderRadius: 2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.65rem", color: "var(--ink3)" }}>
+                        {PRESETS.includes(editColor) ? "＋" : null}
+                      </div>
+                      <input type="color" value={PRESETS.includes(editColor) ? "#ffffff" : editColor}
+                        onChange={e => setEditColor(e.target.value)}
+                        style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }} />
+                    </label>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button onClick={saveEdit} disabled={!editText.trim() || editSaving}
+                    style={{ flex: 1, padding: "10px", background: editText.trim() && !editSaving ? "var(--ink)" : "var(--ink3)", color: "white", border: "none", cursor: editText.trim() && !editSaving ? "pointer" : "default", fontFamily: "var(--font-kalam), serif", fontSize: "1rem" }}>
+                    {editSaving ? "Saving…" : "Save changes"}
+                  </button>
+                  <button onClick={() => setEditNote(null)}
+                    style={{ padding: "10px 14px", background: "none", border: "1.5px solid rgba(28,28,28,0.2)", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink2)" }}>
+                    Cancel
+                  </button>
+                </div>
+                <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.72rem", color: "var(--ink3)", marginTop: 8, textAlign: "center" }}>⌘+Enter to save</p>
               </div>
             </div>
           </div>
