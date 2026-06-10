@@ -46,6 +46,8 @@ export interface Note {
   upvotes: number;
   lane_id: string | null;
   lane_order: number;
+  due_date: string | null;
+  priority: "high" | "medium" | "low" | null;
   created_at: string;
 }
 

@@ -3,18 +3,14 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Board, Note, NoteColor, Lane } from "@/types";
 import { sanitizeText, validateNoteContent, validateAuthorName, LIMITS } from "@/lib/sanitize";
-import { Plus, X, Trash2, ThumbsUp, ChevronLeft, Copy, Check, Settings, Pencil, GripVertical } from "lucide-react";
+import { Plus, X, Trash2, ThumbsUp, ChevronLeft, Copy, Check, Settings, Pencil, ChevronRight, ChevronLeft as ChevLeft } from "lucide-react";
 import KofiButton from "@/components/KofiButton";
 
-/* ── Default lanes for project tracking ── */
 const DEFAULT_LANES: Lane[] = [
-  { id: "todo",        label: "To Do",      color: "#fce7f3", order: 0 },
+  { id: "todo",        label: "To Do",       color: "#fce7f3", order: 0 },
   { id: "in-progress", label: "In Progress", color: "#dbeafe", order: 1 },
-  { id: "done",        label: "#dcfce7",     color: "#dcfce7", order: 2 },
+  { id: "done",        label: "Done",        color: "#dcfce7", order: 2 },
 ];
-
-// Fix Done label
-DEFAULT_LANES[2].label = "Done";
 
 const LEGACY: Record<string, string> = {
   yellow: "#fef9c3", blue: "#dbeafe", pink: "#fce7f3",
@@ -24,10 +20,25 @@ const PRESETS = ["#fef9c3","#dbeafe","#fce7f3","#dcfce7","#ffedd5",
                  "#f0fdf4","#fdf2f8","#eff6ff","#fff7ed","#f0f9ff"];
 function colorBg(c: NoteColor): string { return LEGACY[c] ?? c; }
 
+const PRIORITY_CONFIG = {
+  high:   { label: "High",   color: "#ef4444", bg: "#fee2e2" },
+  medium: { label: "Medium", color: "#f59e0b", bg: "#fef3c7" },
+  low:    { label: "Low",    color: "#22c55e", bg: "#dcfce7" },
+};
+
 function getFingerprint() {
   let fp = localStorage.getItem("piu_fp");
   if (!fp) { fp = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("piu_fp", fp); }
   return fp;
+}
+
+function isOverdue(due: string | null) {
+  if (!due) return false;
+  return new Date(due) < new Date(new Date().toDateString());
+}
+
+function formatDate(due: string) {
+  return new Date(due).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
 interface Props {
@@ -43,27 +54,23 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
   const [copied, setCopied] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
 
-  /* ── Add note modal ── */
-  const [showAdd, setShowAdd]         = useState(false);
-  const [addLane, setAddLane]         = useState("todo");
-  const [newText, setNewText]         = useState("");
-  const [newColor, setNewColor]       = useState<NoteColor>("#fef9c3");
-  const [authorName, setAuthorName]   = useState(() => typeof window !== "undefined" ? localStorage.getItem("piu_name") ?? "" : "");
-  const [addError, setAddError]       = useState("");
-  const [saving, setSaving]           = useState(false);
+  const [showAdd, setShowAdd]       = useState(false);
+  const [addLane, setAddLane]       = useState("todo");
+  const [newText, setNewText]       = useState("");
+  const [newColor, setNewColor]     = useState<NoteColor>("#fef9c3");
+  const [newPriority, setNewPriority] = useState<"high"|"medium"|"low"|"">("");
+  const [newDueDate, setNewDueDate] = useState("");
+  const [authorName, setAuthorName] = useState(() => typeof window !== "undefined" ? localStorage.getItem("piu_name") ?? "" : "");
+  const [addError, setAddError]     = useState("");
+  const [saving, setSaving]         = useState(false);
 
-  /* ── Inline edit ── */
-  const [editingId, setEditingId]     = useState<string | null>(null);
-  const [editText, setEditText]       = useState("");
+  const [editingId, setEditingId]   = useState<string | null>(null);
+  const [editText, setEditText]     = useState("");
 
-  /* ── Drag between lanes ── */
   const dragging = useRef<{ id: string; fromLane: string } | null>(null);
   const [dragOverLane, setDragOverLane] = useState<string | null>(null);
-
-  /* ── Voted ── */
   const [voted, setVoted] = useState<Set<string>>(new Set());
 
-  /* ── Realtime ── */
   useEffect(() => {
     const ch = supabase.channel(`lane:${board.id}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notes", filter: `board_id=eq.${board.id}` },
@@ -76,7 +83,6 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
     return () => { supabase.removeChannel(ch); };
   }, [board.id, supabase]);
 
-  /* ── Add note ── */
   const addNote = async () => {
     const ce = validateNoteContent(newText);
     if (ce) { setAddError(ce); return; }
@@ -92,19 +98,19 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
       x: 0, y: 0, width: 220, rotation: 0,
       author_name: name, user_id: currentUser?.id ?? null,
       lane_id: addLane, lane_order: laneNotes.length,
+      priority: newPriority || null,
+      due_date: newDueDate || null,
     });
     setSaving(false);
     if (error) { setAddError("Failed to save. Try again."); return; }
-    setNewText(""); setShowAdd(false);
+    setNewText(""); setNewDueDate(""); setNewPriority(""); setShowAdd(false);
   };
 
-  /* ── Delete note ── */
   const deleteNote = async (id: string) => {
     setNotes(n => n.filter(x => x.id !== id));
     await supabase.from("notes").delete().eq("id", id);
   };
 
-  /* ── Inline edit ── */
   const saveEdit = async (id: string) => {
     const clean = sanitizeText(editText).trim();
     setEditingId(null);
@@ -113,7 +119,6 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
     await supabase.from("notes").update({ content: clean }).eq("id", id);
   };
 
-  /* ── Upvote ── */
   const upvote = async (note: Note) => {
     const fp = getFingerprint();
     if (voted.has(note.id)) return;
@@ -124,7 +129,17 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
     }
   };
 
-  /* ── Drag & drop between lanes ── */
+  /* Move card to adjacent lane */
+  const moveCard = async (note: Note, dir: "prev" | "next") => {
+    const idx = DEFAULT_LANES.findIndex(l => l.id === note.lane_id);
+    const targetIdx = dir === "next" ? idx + 1 : idx - 1;
+    if (targetIdx < 0 || targetIdx >= DEFAULT_LANES.length) return;
+    const targetLane = DEFAULT_LANES[targetIdx].id;
+    const targetNotes = notes.filter(n => n.lane_id === targetLane);
+    setNotes(ns => ns.map(n => n.id === note.id ? { ...n, lane_id: targetLane, lane_order: targetNotes.length } : n));
+    await supabase.from("notes").update({ lane_id: targetLane, lane_order: targetNotes.length }).eq("id", note.id);
+  };
+
   const onDragStart = (e: React.DragEvent, note: Note) => {
     dragging.current = { id: note.id, fromLane: note.lane_id ?? "todo" };
     e.dataTransfer.effectAllowed = "move";
@@ -169,12 +184,10 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
             <span style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink)", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {board.title}
             </span>
-            {/* Beta badge */}
             <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.7rem", padding: "2px 7px", background: "#fde047", border: "1px solid rgba(28,28,28,0.2)", color: "var(--ink)", flexShrink: 0, fontWeight: 700 }}>
               BETA
             </span>
           </div>
-
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
             <a href="https://github.com/Varshithvhegde/postitup/issues" target="_blank" rel="noopener noreferrer"
               className="desktop-only"
@@ -182,17 +195,14 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
               <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
               Feedback
             </a>
-
             <button onClick={() => setShowAdd(true)}
               style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", background: "var(--ink)", border: "none", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.88rem", color: "white" }}>
               <Plus size={14} /> Add card
             </button>
-
             <button onClick={copyLink}
               style={{ display: "flex", alignItems: "center", padding: "7px 10px", background: copied ? "var(--sticky-g)" : "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", cursor: "pointer", color: "var(--ink)", transition: "background 0.2s" }}>
               {copied ? <Check size={15} /> : <Copy size={15} />}
             </button>
-
             <button onClick={() => setMobileMenu(m => !m)}
               style={{ display: "flex", alignItems: "center", padding: "7px 8px", background: mobileMenu ? "var(--sticky-y)" : "var(--paper2)", border: "1.5px solid rgba(28,28,28,0.18)", cursor: "pointer", color: "var(--ink)" }}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="13" cy="8" r="1.5"/></svg>
@@ -201,7 +211,6 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
         </div>
       </div>
 
-      {/* Backdrop + overflow menu */}
       {mobileMenu && <div style={{ position: "fixed", inset: 0, zIndex: 58 }} onClick={() => setMobileMenu(false)} />}
       {mobileMenu && (
         <div style={{ position: "fixed", top: 52, right: 8, zIndex: 70, minWidth: 200, background: "rgba(250,249,246,0.99)", border: "1.5px solid rgba(28,28,28,0.15)", boxShadow: "4px 5px 0 rgba(28,28,28,0.12)", padding: "8px", display: "flex", flexDirection: "column", gap: 2 }}>
@@ -215,44 +224,34 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
         </div>
       )}
 
-      {/* ── Lane board ── */}
-      <div style={{ flex: 1, display: "flex", gap: 0, overflow: "hidden", background: "var(--paper)" }}>
-        {/* Background dot grid */}
-        <div className="bg-dot-grid" style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }} />
-
-        <div style={{ display: "flex", gap: 16, padding: "20px 16px", overflowX: "auto", overflowY: "hidden", flex: 1, position: "relative", zIndex: 1 }}>
-          {lanes.map(lane => {
+      {/* ── Lane board — fills full width ── */}
+      <div style={{ flex: 1, overflow: "hidden", background: "var(--paper)", position: "relative" }}>
+        <div className="bg-dot-grid" style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none" }} />
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(${lanes.length}, 1fr)`,
+          gap: 12,
+          padding: "16px 16px 16px",
+          height: "100%",
+          position: "relative",
+          zIndex: 1,
+          boxSizing: "border-box",
+        }}>
+          {lanes.map((lane, laneIdx) => {
             const laneNotes = notes
               .filter(n => n.lane_id === lane.id)
               .sort((a, b) => a.lane_order - b.lane_order);
             const isOver = dragOverLane === lane.id;
 
             return (
-              <div
-                key={lane.id}
+              <div key={lane.id}
                 onDragOver={e => onDragOver(e, lane.id)}
                 onDragLeave={() => setDragOverLane(null)}
                 onDrop={e => onDrop(e, lane.id)}
-                style={{
-                  flex: "0 0 300px",
-                  display: "flex",
-                  flexDirection: "column",
-                  height: "100%",
-                  minWidth: 0,
-                }}
+                style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}
               >
                 {/* Lane header */}
-                <div style={{
-                  background: lane.color,
-                  border: "1.5px solid var(--ink)",
-                  borderBottom: "none",
-                  padding: "10px 14px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  position: "relative",
-                }}>
-                  {/* Tape on header */}
+                <div style={{ background: lane.color, border: "1.5px solid var(--ink)", borderBottom: "none", padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative", flexShrink: 0 }}>
                   <span className={`tape tape-${lane.id === "todo" ? "p" : lane.id === "in-progress" ? "b" : "g"}`}
                     style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 48, height: 15, borderRadius: 2 }} />
                   <h3 style={{ fontFamily: "var(--font-sketch), var(--font-kalam), serif", fontSize: "1rem", fontWeight: 700, color: "var(--ink)", margin: 0 }}>
@@ -263,7 +262,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
                       {laneNotes.length}
                     </span>
                     <button onClick={() => { setAddLane(lane.id); setShowAdd(true); }}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink2)", display: "flex", alignItems: "center", padding: 2, transition: "color 0.15s" }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink2)", display: "flex", alignItems: "center", padding: 2 }}
                       onMouseEnter={e => (e.currentTarget.style.color = "var(--ink)")}
                       onMouseLeave={e => (e.currentTarget.style.color = "var(--ink2)")}>
                       <Plus size={15} />
@@ -272,99 +271,109 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
                 </div>
 
                 {/* Lane body */}
-                <div style={{
-                  flex: 1,
-                  overflowY: "auto",
-                  border: "1.5px solid var(--ink)",
-                  background: isOver ? `${lane.color}80` : "rgba(255,255,255,0.55)",
-                  padding: "10px 10px 60px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 10,
-                  transition: "background 0.15s",
-                  backdropFilter: "blur(2px)",
-                }}>
+                <div style={{ flex: 1, overflowY: "auto", border: "1.5px solid var(--ink)", background: isOver ? `${lane.color}90` : "rgba(255,255,255,0.6)", padding: "10px 10px 24px", display: "flex", flexDirection: "column", gap: 8, transition: "background 0.15s", backdropFilter: "blur(2px)" }}>
                   {laneNotes.length === 0 && !isOver && (
-                    <div style={{ textAlign: "center", padding: "32px 12px", pointerEvents: "none" }}>
-                      <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "var(--ink3)" }}>
-                        Drop cards here
-                      </p>
-                    </div>
+                    <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "var(--ink3)", textAlign: "center", padding: "24px 0", pointerEvents: "none" }}>
+                      Drop cards here
+                    </p>
                   )}
 
-                  {laneNotes.map(note => (
-                    <div
-                      key={note.id}
-                      draggable={editingId !== note.id}
-                      onDragStart={e => onDragStart(e, note)}
-                      style={{
-                        background: colorBg(note.color),
-                        border: "1.5px solid var(--ink)",
-                        boxShadow: "2px 3px 0 rgba(28,28,28,0.1)",
-                        padding: "12px 12px 10px",
-                        position: "relative",
-                        cursor: editingId === note.id ? "default" : "grab",
-                        transition: "box-shadow 0.15s, transform 0.15s",
-                        userSelect: editingId === note.id ? "text" : "none",
-                      }}
-                      onMouseEnter={e => { if (editingId !== note.id) { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "3px 5px 0 rgba(28,28,28,0.14)"; } }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.boxShadow = "2px 3px 0 rgba(28,28,28,0.1)"; }}
-                    >
-                      {/* Drag handle */}
-                      {editingId !== note.id && (
-                        <div style={{ position: "absolute", top: 8, left: 6, color: "var(--ink3)", opacity: 0.4, cursor: "grab" }}>
-                          <GripVertical size={12} />
+                  {laneNotes.map(note => {
+                    const pri = note.priority ? PRIORITY_CONFIG[note.priority] : null;
+                    const overdue = isOverdue(note.due_date);
+
+                    return (
+                      <div key={note.id}
+                        draggable={editingId !== note.id}
+                        onDragStart={e => onDragStart(e, note)}
+                        style={{ background: colorBg(note.color), border: "1.5px solid var(--ink)", boxShadow: "2px 3px 0 rgba(28,28,28,0.1)", padding: "10px 10px 8px", position: "relative", cursor: editingId === note.id ? "default" : "grab", transition: "box-shadow 0.15s, transform 0.15s", userSelect: editingId === note.id ? "text" : "none" }}
+                        onMouseEnter={e => { if (editingId !== note.id) { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "3px 5px 0 rgba(28,28,28,0.14)"; } }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.boxShadow = "2px 3px 0 rgba(28,28,28,0.1)"; }}
+                      >
+                        {/* Priority + actions row */}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                          {pri ? (
+                            <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.68rem", fontWeight: 700, padding: "1px 7px", background: pri.bg, color: pri.color, border: `1px solid ${pri.color}40` }}>
+                              {pri.label}
+                            </span>
+                          ) : <span />}
+                          <div style={{ display: "flex", gap: 2 }}>
+                            {(isOwner || currentUser?.id === note.user_id) && editingId !== note.id && (
+                              <button onClick={() => { setEditingId(note.id); setEditText(note.content); }}
+                                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", padding: 2, opacity: 0.5 }}
+                                onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+                                onMouseLeave={e => (e.currentTarget.style.opacity = "0.5")}>
+                                <Pencil size={10} />
+                              </button>
+                            )}
+                            {(isOwner || currentUser?.id === note.user_id) && (
+                              <button onClick={() => deleteNote(note.id)}
+                                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", padding: 2, opacity: 0.5 }}
+                                onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+                                onMouseLeave={e => (e.currentTarget.style.opacity = "0.5")}>
+                                <Trash2 size={10} />
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      )}
 
-                      {/* Actions */}
-                      <div style={{ position: "absolute", top: 5, right: 5, display: "flex", gap: 2 }}>
-                        {(isOwner || currentUser?.id === note.user_id) && editingId !== note.id && (
-                          <button onClick={() => { setEditingId(note.id); setEditText(note.content); }}
-                            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", padding: 2, opacity: 0.5 }}
-                            onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-                            onMouseLeave={e => (e.currentTarget.style.opacity = "0.5")}>
-                            <Pencil size={11} />
-                          </button>
+                        {/* Content */}
+                        {editingId === note.id ? (
+                          <textarea autoFocus value={editText}
+                            onChange={e => setEditText(e.target.value.slice(0, LIMITS.noteContent.max))}
+                            onBlur={() => saveEdit(note.id)}
+                            onKeyDown={e => { if (e.key === "Enter" && e.metaKey) { e.preventDefault(); saveEdit(note.id); } if (e.key === "Escape") setEditingId(null); }}
+                            style={{ width: "100%", background: "rgba(255,255,255,0.5)", border: "1.5px solid var(--ink)", fontFamily: "var(--font-kalam), serif", fontSize: "0.92rem", color: "var(--ink)", lineHeight: 1.5, resize: "none", outline: "none", padding: "4px 6px" }}
+                            rows={3}
+                          />
+                        ) : (
+                          <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.92rem", color: "var(--ink)", lineHeight: 1.55, margin: "0 0 8px 0", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                            {note.content}
+                          </p>
                         )}
-                        {(isOwner || currentUser?.id === note.user_id) && (
-                          <button onClick={() => deleteNote(note.id)}
-                            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", padding: 2, opacity: 0.5 }}
-                            onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-                            onMouseLeave={e => (e.currentTarget.style.opacity = "0.5")}>
-                            <Trash2 size={11} />
-                          </button>
+
+                        {/* Due date */}
+                        {note.due_date && (
+                          <div style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: "var(--font-kalam), serif", fontSize: "0.7rem", color: overdue ? "#ef4444" : "var(--ink3)", background: overdue ? "#fee2e2" : "rgba(28,28,28,0.06)", padding: "1px 7px", marginBottom: 8, border: overdue ? "1px solid #fca5a5" : "none" }}>
+                            📅 {formatDate(note.due_date)}{overdue ? " · Overdue" : ""}
+                          </div>
                         )}
-                      </div>
 
-                      {/* Content */}
-                      {editingId === note.id ? (
-                        <textarea
-                          autoFocus
-                          value={editText}
-                          onChange={e => setEditText(e.target.value.slice(0, LIMITS.noteContent.max))}
-                          onBlur={() => saveEdit(note.id)}
-                          onKeyDown={e => { if (e.key === "Enter" && e.metaKey) { e.preventDefault(); saveEdit(note.id); } if (e.key === "Escape") setEditingId(null); }}
-                          style={{ width: "100%", background: "rgba(255,255,255,0.5)", border: "1.5px solid var(--ink)", fontFamily: "var(--font-kalam), serif", fontSize: "0.95rem", color: "var(--ink)", lineHeight: 1.6, resize: "none", outline: "none", padding: "4px 6px", marginTop: 4 }}
-                          rows={3}
-                        />
-                      ) : (
-                        <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.95rem", color: "var(--ink)", lineHeight: 1.6, margin: "0 0 10px 16px", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                          {note.content}
-                        </p>
-                      )}
-
-                      {/* Footer */}
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 8, borderTop: "1px dashed rgba(28,28,28,0.15)", marginTop: editingId === note.id ? 8 : 0 }}>
-                        <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.72rem", fontWeight: 700, color: "var(--ink2)" }}>— {note.author_name}</span>
-                        <button onClick={() => upvote(note)}
-                          style={{ display: "flex", alignItems: "center", gap: 3, background: voted.has(note.id) ? "rgba(28,28,28,0.1)" : "none", border: "1px solid rgba(28,28,28,0.15)", borderRadius: 20, padding: "2px 7px", cursor: voted.has(note.id) ? "default" : "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.72rem", color: "var(--ink2)" }}>
-                          <ThumbsUp size={10} style={{ color: voted.has(note.id) ? "var(--ink)" : "var(--ink3)" }} />
-                          {note.upvotes}
-                        </button>
+                        {/* Footer — author + upvotes + move arrows */}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 6, borderTop: "1px dashed rgba(28,28,28,0.15)" }}>
+                          <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.7rem", fontWeight: 700, color: "var(--ink2)" }}>— {note.author_name}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                            {/* Quick move left */}
+                            {laneIdx > 0 && (
+                              <button onClick={() => moveCard(note, "prev")}
+                                title={`Move to ${DEFAULT_LANES[laneIdx - 1].label}`}
+                                style={{ background: "none", border: "1px solid rgba(28,28,28,0.15)", borderRadius: 3, cursor: "pointer", color: "var(--ink3)", padding: "1px 3px", display: "flex", alignItems: "center" }}
+                                onMouseEnter={e => (e.currentTarget.style.color = "var(--ink)")}
+                                onMouseLeave={e => (e.currentTarget.style.color = "var(--ink3)")}>
+                                <ChevLeft size={11} />
+                              </button>
+                            )}
+                            {/* Upvote */}
+                            <button onClick={() => upvote(note)}
+                              style={{ display: "flex", alignItems: "center", gap: 3, background: voted.has(note.id) ? "rgba(28,28,28,0.1)" : "none", border: "1px solid rgba(28,28,28,0.15)", borderRadius: 20, padding: "1px 6px", cursor: voted.has(note.id) ? "default" : "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.7rem", color: "var(--ink2)" }}>
+                              <ThumbsUp size={9} style={{ color: voted.has(note.id) ? "var(--ink)" : "var(--ink3)" }} />
+                              {note.upvotes}
+                            </button>
+                            {/* Quick move right */}
+                            {laneIdx < DEFAULT_LANES.length - 1 && (
+                              <button onClick={() => moveCard(note, "next")}
+                                title={`Move to ${DEFAULT_LANES[laneIdx + 1].label}`}
+                                style={{ background: "none", border: "1px solid rgba(28,28,28,0.15)", borderRadius: 3, cursor: "pointer", color: "var(--ink3)", padding: "1px 3px", display: "flex", alignItems: "center" }}
+                                onMouseEnter={e => (e.currentTarget.style.color = "var(--ink)")}
+                                onMouseLeave={e => (e.currentTarget.style.color = "var(--ink3)")}>
+                                <ChevronRight size={11} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -376,7 +385,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
       {showAdd && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(28,28,28,0.35)", backdropFilter: "blur(3px)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
           onClick={() => setShowAdd(false)}>
-          <div style={{ position: "relative", maxWidth: 380, width: "100%" }} onClick={e => e.stopPropagation()}>
+          <div style={{ position: "relative", maxWidth: 400, width: "100%", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
             <span className="tape tape-y" style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 56, height: 17, borderRadius: 2, zIndex: 10 }} />
             <div className="sk" style={{ background: colorBg(newColor), padding: "28px 22px 22px" }}>
               <div className="sk-b" />
@@ -388,7 +397,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
 
                 {/* Lane selector */}
                 <div style={{ marginBottom: 12 }}>
-                  <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: "var(--ink3)", marginBottom: 6 }}>Add to column</p>
+                  <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: "var(--ink3)", marginBottom: 6 }}>Column</p>
                   <div style={{ display: "flex", gap: 6 }}>
                     {lanes.map(l => (
                       <button key={l.id} onClick={() => setAddLane(l.id)}
@@ -413,6 +422,26 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
                     style={{ width: "100%", padding: "10px", border: `1.5px solid ${newText.length >= LIMITS.noteContent.max ? "#ef4444" : "rgba(28,28,28,0.2)"}`, background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink)", outline: "none", resize: "vertical" }}
                   />
                   <span style={{ position: "absolute", bottom: 6, right: 8, fontFamily: "var(--font-kalam), serif", fontSize: "0.7rem", color: "var(--ink3)" }}>{newText.length}/{LIMITS.noteContent.max}</span>
+                </div>
+
+                {/* Priority */}
+                <div style={{ marginBottom: 12 }}>
+                  <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: "var(--ink3)", marginBottom: 6 }}>Priority (optional)</p>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {(["high", "medium", "low"] as const).map(p => (
+                      <button key={p} onClick={() => setNewPriority(newPriority === p ? "" : p)}
+                        style={{ flex: 1, padding: "5px", background: newPriority === p ? PRIORITY_CONFIG[p].bg : "white", border: newPriority === p ? `2px solid ${PRIORITY_CONFIG[p].color}` : "1.5px solid rgba(28,28,28,0.2)", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: newPriority === p ? PRIORITY_CONFIG[p].color : "var(--ink2)", fontWeight: newPriority === p ? 700 : 400, transition: "all 0.15s" }}>
+                        {PRIORITY_CONFIG[p].label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Due date */}
+                <div style={{ marginBottom: 14 }}>
+                  <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: "var(--ink3)", marginBottom: 6 }}>Due date (optional)</p>
+                  <input type="date" value={newDueDate} onChange={e => setNewDueDate(e.target.value)}
+                    style={{ width: "100%", padding: "7px 10px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink)", outline: "none" }} />
                 </div>
 
                 {/* Color */}
