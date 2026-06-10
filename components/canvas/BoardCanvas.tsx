@@ -234,24 +234,39 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
   }, [pan, scale, board.mode]);
 
   /* ── Touch support ── */
-  const lastTap = useRef(0);
-  const touchPanStart = useRef({ tx: 0, ty: 0, px: 0, py: 0 });
-  const pinchStart = useRef<{ dist: number; scale: number } | null>(null);
+  const lastTap        = useRef(0);
+  const touchPanStart  = useRef({ tx: 0, ty: 0, px: 0, py: 0 });
+  const pinchStart     = useRef<{ dist: number; scale: number } | null>(null);
+  // true while a note/rating card is being dragged — used to block page scroll
+  const isTouchDragging = useRef(false);
 
-  const getTouchDist = (t: React.TouchList) =>
+  const getTouchDist = (t: TouchList) =>
     Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+
+  // Register a non-passive touchmove on the canvas so we can call preventDefault()
+  // React synthetic events are passive by default and cannot prevent scroll
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    const handler = (e: TouchEvent) => {
+      if (isTouchDragging.current || (pinchStart.current && e.touches.length === 2)) {
+        e.preventDefault();
+      }
+    };
+    el.addEventListener("touchmove", handler, { passive: false });
+    return () => el.removeEventListener("touchmove", handler);
+  }, []);
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2) {
-      // Pinch to zoom
-      pinchStart.current = { dist: getTouchDist(e.touches), scale };
+      pinchStart.current = { dist: getTouchDist(e.touches as unknown as TouchList), scale };
+      isTouchDragging.current = true;
       return;
     }
     if (e.touches.length === 1) {
       const t = e.touches[0];
       const target = t.target as HTMLElement;
 
-      // Double-tap on canvas background = open add note
       if (!target.closest(".note-card")) {
         const now = Date.now();
         if (now - lastTap.current < 300) {
@@ -264,8 +279,9 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
           return;
         }
         lastTap.current = now;
-        // Single touch on background = pan
         touchPanStart.current = { tx: t.clientX, ty: t.clientY, px: pan.x, py: pan.y };
+        // Don't block scroll for canvas pan — let user scroll the page naturally
+        isTouchDragging.current = false;
         return;
       }
     }
@@ -273,8 +289,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2 && pinchStart.current) {
-      e.preventDefault();
-      const newDist = getTouchDist(e.touches);
+      const newDist = getTouchDist(e.touches as unknown as TouchList);
       const newScale = Math.min(2, Math.max(0.4, pinchStart.current.scale * (newDist / pinchStart.current.dist)));
       setScale(newScale);
       return;
@@ -282,6 +297,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
     if (e.touches.length === 1) {
       const t = e.touches[0];
       if (dragging.current) {
+        // Note drag — preventDefault handled by native listener above
         const dx = (t.clientX - dragging.current.startX) / scale;
         const dy = (t.clientY - dragging.current.startY) / scale;
         const nx = snap(dragging.current.ox + dx, board.mode);
@@ -295,16 +311,13 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
         }
         return;
       }
-      // Pan canvas
-      setPan({
-        x: touchPanStart.current.px + (t.clientX - touchPanStart.current.tx),
-        y: touchPanStart.current.py + (t.clientY - touchPanStart.current.ty),
-      });
+      // Background pan — let page scroll happen naturally, don't update pan
     }
   }, [scale, board.mode]);
 
   const onTouchEnd = useCallback(async () => {
     pinchStart.current = null;
+    isTouchDragging.current = false;
     if (dragging.current) {
       const { id, type, finalX, finalY } = dragging.current;
       dragging.current = null;
@@ -318,6 +331,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
     if (e.touches.length !== 1) return;
     e.stopPropagation();
     const t = e.touches[0];
+    isTouchDragging.current = true;
     dragging.current = { id: note.id, type: "note", ox: note.x, oy: note.y, startX: t.clientX, startY: t.clientY, finalX: note.x, finalY: note.y };
   };
 
@@ -325,6 +339,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
     if (e.touches.length !== 1) return;
     e.stopPropagation();
     const t = e.touches[0];
+    isTouchDragging.current = true;
     dragging.current = { id: r.id, type: "rating", ox: r.x, oy: r.y, startX: t.clientX, startY: t.clientY, finalX: r.x, finalY: r.y };
   };
 
