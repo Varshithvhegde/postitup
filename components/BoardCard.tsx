@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import type { Board } from "@/types";
 import { Globe, Link as LinkIcon, Lock, Settings } from "lucide-react";
 
-const MODE_LABELS = { free: "Free canvas", grid: "Grid", ruled: "Ruled lines" };
+const MODE_LABELS: Record<string, string> = { free: "Free canvas", grid: "Grid", ruled: "Ruled lines", lane: "Lane mode" };
 const VIS_ICONS   = { public: Globe, link: LinkIcon, private: Lock };
 const VIS_COLORS  = { public: "var(--sticky-g)", link: "var(--sticky-b)", private: "var(--sticky-p)" };
 const CARD_COLORS = ["sn-y", "sn-b", "sn-p", "sn-g", "sn-o"];

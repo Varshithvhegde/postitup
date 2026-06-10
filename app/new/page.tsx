@@ -10,10 +10,11 @@ function slugify(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) + "-" + Math.random().toString(36).slice(2, 6);
 }
 
-const MODES: { value: BoardMode; label: string; desc: string; bg: string }[] = [
+const MODES: { value: BoardMode; label: string; desc: string; bg: string; beta?: boolean }[] = [
   { value: "free",  label: "Free canvas",  desc: "Drag notes anywhere on an open dot-grid canvas", bg: "sn-y" },
   { value: "grid",  label: "Grid snap",    desc: "Notes snap to a square grid — neat and organized", bg: "sn-b" },
   { value: "ruled", label: "Ruled lines",  desc: "Horizontal lines like a notebook — great for lists", bg: "sn-p" },
+  { value: "lane",  label: "Lane mode",    desc: "Kanban columns — To Do / In Progress / Done. Lightweight project tracking.", bg: "sn-g", beta: true },
 ];
 
 const VIS: { value: BoardVisibility; label: string; desc: string }[] = [
@@ -105,7 +106,10 @@ export default function NewBoardPage() {
                           cursor: "pointer", textAlign: "left", display: "flex", flexDirection: "column", gap: 2,
                           transition: "border-color 0.15s, background 0.15s",
                         }}>
-                        <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", fontWeight: 700, color: "var(--ink)" }}>{m.label}</span>
+                        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", fontWeight: 700, color: "var(--ink)" }}>{m.label}</span>
+                          {m.beta && <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.68rem", padding: "1px 6px", background: "#fde047", border: "1px solid rgba(28,28,28,0.2)", color: "var(--ink)", fontWeight: 700 }}>BETA</span>}
+                        </span>
                         <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "var(--ink2)" }}>{m.desc}</span>
                       </button>
                     ))}

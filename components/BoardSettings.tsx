@@ -7,10 +7,11 @@ import type { Board, BoardMode, BoardVisibility } from "@/types";
 import { sanitizeText, validateBoardTitle, LIMITS } from "@/lib/sanitize";
 import { Trash2, ChevronLeft, Save, AlertTriangle } from "lucide-react";
 
-const MODES: { value: BoardMode; label: string; desc: string }[] = [
+const MODES: { value: BoardMode; label: string; desc: string; beta?: boolean }[] = [
   { value: "free",  label: "Free canvas",  desc: "Drag notes anywhere on an open dot-grid canvas" },
   { value: "grid",  label: "Grid snap",    desc: "Notes snap to a square grid" },
   { value: "ruled", label: "Ruled lines",  desc: "Horizontal lines like a notebook" },
+  { value: "lane",  label: "Lane mode",    desc: "Kanban columns — To Do / In Progress / Done", beta: true },
 ];
 
 const VIS: { value: BoardVisibility; label: string; desc: string }[] = [
@@ -121,7 +122,10 @@ export default function BoardSettings({ board }: { board: Board }) {
                     {MODES.map(m => (
                       <button key={m.value} type="button" onClick={() => setMode(m.value)}
                         style={{ padding: "12px 16px", border: mode === m.value ? "2px solid var(--ink)" : "1.5px solid rgba(28,28,28,0.18)", background: mode === m.value ? "var(--sticky-y)" : "white", cursor: "pointer", textAlign: "left", transition: "border-color 0.15s, background 0.15s" }}>
-                        <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", fontWeight: 700, color: "var(--ink)", display: "block" }}>{m.label}</span>
+                        <span style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                          <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", fontWeight: 700, color: "var(--ink)" }}>{m.label}</span>
+                          {m.beta && <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.68rem", padding: "1px 6px", background: "#fde047", border: "1px solid rgba(28,28,28,0.2)", color: "var(--ink)", fontWeight: 700 }}>BETA</span>}
+                        </span>
                         <span style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "var(--ink2)" }}>{m.desc}</span>
                       </button>
                     ))}

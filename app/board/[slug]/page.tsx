@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import BoardCanvas from "@/components/canvas/BoardCanvas";
+import LaneCanvas from "@/components/canvas/LaneCanvas";
 import type { Metadata } from "next";
 
 const SITE_URL = "https://postitup.varshithvhegde.in";
@@ -51,6 +52,17 @@ export default async function BoardPage({ params }: { params: Promise<{ slug: st
   ]);
 
   const isOwner = user?.id === board.owner_id;
+
+  if (board.mode === "lane") {
+    return (
+      <LaneCanvas
+        board={board}
+        initialNotes={notes ?? []}
+        currentUser={user ? { id: user.id, email: user.email ?? "" } : null}
+        isOwner={isOwner}
+      />
+    );
+  }
 
   return (
     <BoardCanvas
