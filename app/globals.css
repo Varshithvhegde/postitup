@@ -110,3 +110,9 @@ input, textarea, select, button { font-family: inherit; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--paper2); }
 ::-webkit-scrollbar-thumb { background: var(--ink3); border-radius: 3px; }
+
+/* Responsive helpers */
+.desktop-only { display: none !important; }
+@media (min-width: 640px) {
+  .desktop-only { display: flex !important; }
+}
