@@ -33,17 +33,17 @@ export default withSentryConfig(nextConfig, {
   org: "varshith-v-hegde",
   project: "postitup",
 
-  // Only upload source maps in CI/production to keep local builds fast
   silent: !process.env.CI,
 
-  // Disable source map upload if SENTRY_AUTH_TOKEN is not set (local dev)
   sourcemaps: {
     disable: !process.env.SENTRY_AUTH_TOKEN,
   },
 
-  // Tree-shake Sentry logger statements from client bundle
   disableLogger: true,
-
-  // Automatically instrument Next.js server components
   autoInstrumentServerFunctions: true,
+
+  // Point withSentryConfig to the config files explicitly
+  clientConfigPath: "./sentry.client.config.ts",
+  serverConfigPath: "./sentry.server.config.ts",
+  edgeConfigPath: "./sentry.edge.config.ts",
 });

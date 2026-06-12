@@ -15,6 +15,6 @@ Sentry.init({
     Sentry.replayIntegration(),
   ],
 
-  // Don't print debug output in production
-  debug: false,
+  // Set to true temporarily to confirm Sentry is initializing in console
+  debug: process.env.NODE_ENV !== "production",
 });
