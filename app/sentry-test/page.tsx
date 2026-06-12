@@ -26,6 +26,13 @@ export default function SentryTestPage() {
     show("✅ Info message sent to Sentry");
   };
 
+  const triggerMetrics = () => {
+    Sentry.metrics.count("button_click", 1);
+    Sentry.metrics.gauge("page_load_time", 150, { unit: "millisecond" });
+    Sentry.metrics.distribution("response_time", 200, { unit: "millisecond" });
+    show("✅ Metrics sent — count, gauge, distribution (check Sentry → Metrics)");
+  };
+
   const triggerWithContext = () => {
     Sentry.withScope((scope) => {
       scope.setTag("test_type", "context_test");
@@ -64,6 +71,13 @@ export default function SentryTestPage() {
             className="rounded-lg bg-green-100 hover:bg-green-200 text-green-800 font-medium px-4 py-2 text-sm text-left"
           >
             💬 Info message
+          </button>
+
+          <button
+            onClick={triggerMetrics}
+            className="rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-medium px-4 py-2 text-sm text-left"
+          >
+            📊 Send metrics (count + gauge + distribution)
           </button>
 
           <button
