@@ -7,4 +7,6 @@ Sentry.init({
   tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
 
   debug: false,
+  // Suppress verbose Http.Server / span logs in development
+  _experiments: { metricsAggregator: false },
 });

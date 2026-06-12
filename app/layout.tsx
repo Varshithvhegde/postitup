@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Kalam, Architects_Daughter } from "next/font/google";
 import "./globals.css";
-import "@/sentry.client.config";
+import { SentryInit } from "./_sentry-init";
 
 const kalam = Kalam({
   variable: "--font-kalam",
@@ -73,7 +73,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${kalam.variable} ${architectsDaughter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <SentryInit />
+        {children}
+      </body>
     </html>
   );
 }
