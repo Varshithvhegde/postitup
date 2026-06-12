@@ -41,9 +41,4 @@ export default withSentryConfig(nextConfig, {
 
   disableLogger: true,
   autoInstrumentServerFunctions: true,
-
-  // Point withSentryConfig to the config files explicitly
-  clientConfigPath: "./sentry.client.config.ts",
-  serverConfigPath: "./sentry.server.config.ts",
-  edgeConfigPath: "./sentry.edge.config.ts",
 });

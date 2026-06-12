@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Kalam, Architects_Daughter } from "next/font/google";
 import "./globals.css";
+import "@/sentry.client.config";
 
 const kalam = Kalam({
   variable: "--font-kalam",
