@@ -48,6 +48,7 @@ export interface Note {
   lane_order: number;
   due_date: string | null;
   priority: "high" | "medium" | "low" | null;
+  z_index: number;
   created_at: string;
 }
 

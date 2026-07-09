@@ -115,6 +115,9 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
   /* ── Mobile toolbar overflow menu ── */
   const [mobileMenu, setMobileMenu] = useState(false);
 
+  /* ── Context menu (right-click) ── */
+  const [ctxMenu, setCtxMenu] = useState<{ noteId: string; x: number; y: number } | null>(null);
+
   /* ── Realtime subscription ── */
   useEffect(() => {
     const channel = supabase
@@ -437,10 +440,34 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
     }
   };
 
+  /* ── Bring to front / Send to back ── */
+  const bringToFront = async (noteId: string) => {
+    const maxZ = Math.max(0, ...notes.map(n => n.z_index));
+    const newZ = maxZ + 1;
+    setNotes(ns => ns.map(n => n.id === noteId ? { ...n, z_index: newZ } : n));
+    await supabase.from("notes").update({ z_index: newZ }).eq("id", noteId);
+    setCtxMenu(null);
+  };
+
+  const sendToBack = async (noteId: string) => {
+    const minZ = Math.min(0, ...notes.map(n => n.z_index));
+    const newZ = minZ - 1;
+    setNotes(ns => ns.map(n => n.id === noteId ? { ...n, z_index: newZ } : n));
+    await supabase.from("notes").update({ z_index: newZ }).eq("id", noteId);
+    setCtxMenu(null);
+  };
+
   /* ── Note drag start ── */
   const onNoteMouseDown = (e: React.MouseEvent, note: Note) => {
     if ((e.target as HTMLElement).closest("button")) return;
     e.stopPropagation();
+    setCtxMenu(null);
+    // Bring to front on drag start (optimistic, no DB write — just visual)
+    setNotes(ns => {
+      const maxZ = Math.max(0, ...ns.map(n => n.z_index));
+      if (note.z_index >= maxZ) return ns;
+      return ns.map(n => n.id === note.id ? { ...n, z_index: maxZ + 1 } : n);
+    });
     dragging.current = { id: note.id, type: "note", ox: note.x, oy: note.y, startX: e.clientX, startY: e.clientY, finalX: note.x, finalY: note.y };
   };
 
@@ -668,12 +695,13 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
             </div>
           ))}
 
-          {notes.map(note => (
+          {[...notes].sort((a, b) => a.z_index - b.z_index).map(note => (
             <div
               key={note.id}
               className="note-card note-enter"
               onMouseDown={e => editingId === note.id ? e.stopPropagation() : onNoteMouseDown(e, note)}
               onTouchStart={e => editingId === note.id ? e.stopPropagation() : onNoteTouchStart(e, note)}
+              onContextMenu={e => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ noteId: note.id, x: e.clientX, y: e.clientY }); }}
               style={{
                 position: "absolute",
                 left: note.x, top: note.y, width: note.width,
@@ -681,7 +709,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
                 cursor: editingId === note.id ? "default" : "grab",
                 userSelect: "none",
                 "--rot": `${note.rotation}deg`,
-                zIndex: editingId === note.id ? 10 : 2,
+                zIndex: editingId === note.id ? 999 : 10 + note.z_index,
               } as React.CSSProperties}
             >
               <span className={`tape ${colorTape(note.color)}`}
@@ -745,6 +773,37 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
           {Math.round(scale * 100)}% · Ctrl+scroll to zoom · Alt+drag or middle-click to pan
         </div>
       </div>
+
+      {/* ── Right-click context menu ── */}
+      {ctxMenu && (
+        <>
+          {/* Click-outside dismissal */}
+          <div style={{ position: "fixed", inset: 0, zIndex: 200 }} onClick={() => setCtxMenu(null)} onContextMenu={e => { e.preventDefault(); setCtxMenu(null); }} />
+          <div style={{
+            position: "fixed", left: ctxMenu.x, top: ctxMenu.y, zIndex: 201,
+            background: "var(--paper, #faf9f6)", border: "1.5px solid var(--ink)", borderRadius: 6,
+            boxShadow: "3px 4px 0 rgba(28,28,28,0.15)", minWidth: 160, overflow: "hidden",
+            fontFamily: "var(--font-kalam), serif",
+          }}>
+            <button
+              onClick={() => bringToFront(ctxMenu.noteId)}
+              style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "9px 14px", background: "none", border: "none", borderBottom: "1px solid rgba(28,28,28,0.1)", cursor: "pointer", fontSize: "0.9rem", color: "var(--ink)", textAlign: "left" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "rgba(28,28,28,0.06)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "none")}
+            >
+              <span style={{ fontSize: 14 }}>⬆</span> Bring to Front
+            </button>
+            <button
+              onClick={() => sendToBack(ctxMenu.noteId)}
+              style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: "0.9rem", color: "var(--ink)", textAlign: "left" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "rgba(28,28,28,0.06)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "none")}
+            >
+              <span style={{ fontSize: 14 }}>⬇</span> Send to Back
+            </button>
+          </div>
+        </>
+      )}
 
       {/* ── Add note modal — single unified form, stars optional when ratings enabled ── */}
       {showAddForm && (

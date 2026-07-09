@@ -317,11 +317,11 @@ export default function EmbedCanvas({ board, initialNotes, initialRatings, curre
           ))}
 
           {/* Note cards */}
-          {notes.map(note => (
+          {[...notes].sort((a, b) => a.z_index - b.z_index).map(note => (
             <div key={note.id} className="note-card"
               onMouseDown={e => { if ((e.target as HTMLElement).closest("button")) return; e.stopPropagation(); dragging.current = { id: note.id, type: "note", ox: note.x, oy: note.y, startX: e.clientX, startY: e.clientY, finalX: note.x, finalY: note.y }; }}
               onTouchStart={e => { if ((e.target as HTMLElement).closest("button")) return; e.stopPropagation(); const t = e.touches[0]; dragging.current = { id: note.id, type: "note", ox: note.x, oy: note.y, startX: t.clientX, startY: t.clientY, finalX: note.x, finalY: note.y }; }}
-              style={{ position: "absolute", left: note.x, top: note.y, width: note.width, transform: `rotate(${note.rotation}deg)`, cursor: "grab", userSelect: "none", zIndex: 2 }}>
+              style={{ position: "absolute", left: note.x, top: note.y, width: note.width, transform: `rotate(${note.rotation}deg)`, cursor: "grab", userSelect: "none", zIndex: 10 + note.z_index }}>
               <span className={`tape ${colorTape(note.color)}`} style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 44, height: 14, borderRadius: 2 }} />
               <div style={{ background: colorBg(note.color), border: "1.5px solid var(--ink)", boxShadow: "2px 3px 0 rgba(28,28,28,0.1)", padding: "20px 12px 10px" }}>
                 <p style={{ fontSize: "0.9rem", color: "var(--ink)", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{note.content}</p>
