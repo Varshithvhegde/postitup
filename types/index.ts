@@ -29,6 +29,7 @@ export interface Rating {
   y: number;
   width: number;
   rotation: number;
+  z_index: number;
   created_at: string;
 }
 

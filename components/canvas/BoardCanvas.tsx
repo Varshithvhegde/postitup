@@ -116,7 +116,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
   const [mobileMenu, setMobileMenu] = useState(false);
 
   /* ── Context menu (right-click) ── */
-  const [ctxMenu, setCtxMenu] = useState<{ noteId: string; x: number; y: number } | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<{ id: string; kind: "note" | "rating"; x: number; y: number } | null>(null);
 
   /* ── Realtime subscription ── */
   useEffect(() => {
@@ -441,24 +441,35 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
   };
 
   /* ── Bring to front / Send to back ── */
-  const bringToFront = async (noteId: string) => {
-    const maxZ = Math.max(0, ...notes.map(n => n.z_index));
-    const newZ = maxZ + 1;
-    setNotes(ns => ns.map(n => n.id === noteId ? { ...n, z_index: newZ } : n));
-    await supabase.from("notes").update({ z_index: newZ }).eq("id", noteId);
+  const bringToFront = async (id: string, kind: "note" | "rating") => {
+    const allZ = [...notes.map(n => n.z_index), ...ratings.map(r => r.z_index)];
+    const maxZ = Math.max(0, ...allZ) + 1;
+    if (kind === "note") {
+      setNotes(ns => ns.map(n => n.id === id ? { ...n, z_index: maxZ } : n));
+      await supabase.from("notes").update({ z_index: maxZ }).eq("id", id);
+    } else {
+      setRatings(rs => rs.map(r => r.id === id ? { ...r, z_index: maxZ } : r));
+      await supabase.from("ratings").update({ z_index: maxZ }).eq("id", id);
+    }
     setCtxMenu(null);
   };
 
-  const sendToBack = async (noteId: string) => {
-    const minZ = Math.min(0, ...notes.map(n => n.z_index));
-    const newZ = minZ - 1;
-    setNotes(ns => ns.map(n => n.id === noteId ? { ...n, z_index: newZ } : n));
-    await supabase.from("notes").update({ z_index: newZ }).eq("id", noteId);
+  const sendToBack = async (id: string, kind: "note" | "rating") => {
+    const allZ = [...notes.map(n => n.z_index), ...ratings.map(r => r.z_index)];
+    const minZ = Math.min(0, ...allZ) - 1;
+    if (kind === "note") {
+      setNotes(ns => ns.map(n => n.id === id ? { ...n, z_index: minZ } : n));
+      await supabase.from("notes").update({ z_index: minZ }).eq("id", id);
+    } else {
+      setRatings(rs => rs.map(r => r.id === id ? { ...r, z_index: minZ } : r));
+      await supabase.from("ratings").update({ z_index: minZ }).eq("id", id);
+    }
     setCtxMenu(null);
   };
 
   /* ── Note drag start ── */
   const onNoteMouseDown = (e: React.MouseEvent, note: Note) => {
+    if (e.button !== 0) return; // ignore right-click / middle-click
     if ((e.target as HTMLElement).closest("button")) return;
     e.stopPropagation();
     setCtxMenu(null);
@@ -472,8 +483,16 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
   };
 
   const onRatingMouseDown = (e: React.MouseEvent, r: Rating) => {
+    if (e.button !== 0) return; // ignore right-click / middle-click
     if ((e.target as HTMLElement).closest("button")) return;
     e.stopPropagation();
+    setCtxMenu(null);
+    // Bring to front on drag start
+    setRatings(rs => {
+      const maxZ = Math.max(0, ...rs.map(x => x.z_index));
+      if (r.z_index >= maxZ) return rs;
+      return rs.map(x => x.id === r.id ? { ...x, z_index: maxZ + 1 } : x);
+    });
     dragging.current = { id: r.id, type: "rating", ox: r.x, oy: r.y, startX: e.clientX, startY: e.clientY, finalX: r.x, finalY: r.y };
   };
 
@@ -609,12 +628,13 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
         <div style={{ position: "absolute", top: 0, left: 0, transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transformOrigin: "0 0", width: "100%", height: "100%" }}>
 
           {/* ── Rating cards on canvas ── */}
-          {board.enable_ratings && ratings.map(r => (
+          {board.enable_ratings && [...ratings].sort((a, b) => a.z_index - b.z_index).map(r => (
             <div
               key={r.id}
               className="note-card note-enter"
               onMouseDown={e => editingRatingId === r.id ? e.stopPropagation() : onRatingMouseDown(e, r)}
               onTouchStart={e => editingRatingId === r.id ? e.stopPropagation() : onRatingTouchStart(e, r)}
+              onContextMenu={e => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ id: r.id, kind: "rating", x: e.clientX, y: e.clientY }); }}
               style={{
                 position: "absolute",
                 left: r.x, top: r.y,
@@ -622,7 +642,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
                 transform: `rotate(${r.rotation}deg)`,
                 cursor: editingRatingId === r.id ? "default" : "grab",
                 userSelect: "none",
-                zIndex: editingRatingId === r.id ? 10 : 2,
+                zIndex: editingRatingId === r.id ? 999 : 10 + r.z_index,
               }}
             >
               <span className="tape tape-y" style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 48, height: 15, borderRadius: 2 }} />
@@ -701,7 +721,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
               className="note-card note-enter"
               onMouseDown={e => editingId === note.id ? e.stopPropagation() : onNoteMouseDown(e, note)}
               onTouchStart={e => editingId === note.id ? e.stopPropagation() : onNoteTouchStart(e, note)}
-              onContextMenu={e => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ noteId: note.id, x: e.clientX, y: e.clientY }); }}
+              onContextMenu={e => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ id: note.id, kind: "note", x: e.clientX, y: e.clientY }); }}
               style={{
                 position: "absolute",
                 left: note.x, top: note.y, width: note.width,
@@ -786,7 +806,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
             fontFamily: "var(--font-kalam), serif",
           }}>
             <button
-              onClick={() => bringToFront(ctxMenu.noteId)}
+              onClick={() => bringToFront(ctxMenu.id, ctxMenu.kind)}
               style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "9px 14px", background: "none", border: "none", borderBottom: "1px solid rgba(28,28,28,0.1)", cursor: "pointer", fontSize: "0.9rem", color: "var(--ink)", textAlign: "left" }}
               onMouseEnter={e => (e.currentTarget.style.background = "rgba(28,28,28,0.06)")}
               onMouseLeave={e => (e.currentTarget.style.background = "none")}
@@ -794,7 +814,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
               <span style={{ fontSize: 14 }}>⬆</span> Bring to Front
             </button>
             <button
-              onClick={() => sendToBack(ctxMenu.noteId)}
+              onClick={() => sendToBack(ctxMenu.id, ctxMenu.kind)}
               style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: "0.9rem", color: "var(--ink)", textAlign: "left" }}
               onMouseEnter={e => (e.currentTarget.style.background = "rgba(28,28,28,0.06)")}
               onMouseLeave={e => (e.currentTarget.style.background = "none")}
