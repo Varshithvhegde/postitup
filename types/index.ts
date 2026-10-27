@@ -13,6 +13,7 @@ export interface Board {
   prompt: string | null;
   background: BoardMode;
   enable_ratings: boolean;
+  auto_contrast: boolean;
   created_at: string;
   updated_at: string;
 }

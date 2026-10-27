@@ -30,6 +30,7 @@ export default function BoardSettings({ board }: { board: Board }) {
   const [mode, setMode]             = useState<BoardMode>(board.mode);
   const [visibility, setVisibility] = useState<BoardVisibility>(board.visibility);
   const [enableRatings, setEnableRatings] = useState(board.enable_ratings ?? false);
+  const [autoContrast, setAutoContrast] = useState(board.auto_contrast ?? true);
   const [saving, setSaving]         = useState(false);
   const [saved, setSaved]           = useState(false);
   const [error, setError]           = useState("");
@@ -56,6 +57,7 @@ export default function BoardSettings({ board }: { board: Board }) {
         mode,
         visibility,
         enable_ratings: enableRatings,
+        auto_contrast: autoContrast,
         updated_at: new Date().toISOString(),
       })
       .eq("id", board.id);
@@ -156,6 +158,20 @@ export default function BoardSettings({ board }: { board: Board }) {
                     </p>
                     <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "var(--ink2)" }}>
                       Visitors can leave a 1-5 star review with an optional comment.
+                    </p>
+                  </div>
+                </label>
+
+                {/* Auto contrast toggle */}
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", border: `1.5px solid ${autoContrast ? "var(--ink)" : "rgba(28,28,28,0.18)"}`, background: autoContrast ? "var(--sticky-g)" : "white", cursor: "pointer", transition: "background 0.15s, border-color 0.15s" }}>
+                  <input type="checkbox" checked={autoContrast} onChange={e => setAutoContrast(e.target.checked)}
+                    style={{ marginTop: 3, width: 16, height: 16, flexShrink: 0, cursor: "pointer", accentColor: "var(--ink)" }} />
+                  <div>
+                    <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "1rem", fontWeight: 700, color: "var(--ink)", marginBottom: 2 }}>
+                      🌗 Auto text contrast
+                    </p>
+                    <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "var(--ink2)" }}>
+                      Use light text on dark notes so they stay readable. Notes with a custom text color are never changed.
                     </p>
                   </div>
                 </label>

@@ -25,8 +25,8 @@ export function isDarkColor(c: string): boolean {
 
 const HEX6 = /^#[0-9a-fA-F]{6}$/;
 
-/** Overrides the ink CSS variables: a custom text color wins, otherwise light text on dark notes. */
-export function noteInkVars(c: string, textColor?: string | null): CSSProperties {
+/** Overrides the ink CSS variables: a custom text color wins, otherwise light text on dark notes (unless autoContrast is off). */
+export function noteInkVars(c: string, textColor?: string | null, autoContrast = true): CSSProperties {
   if (textColor && HEX6.test(textColor)) {
     return {
       "--ink": textColor,
@@ -34,7 +34,7 @@ export function noteInkVars(c: string, textColor?: string | null): CSSProperties
       "--ink3": `color-mix(in srgb, ${textColor} 60%, transparent)`,
     } as CSSProperties;
   }
-  if (!isDarkColor(c)) return {};
+  if (!autoContrast || !isDarkColor(c)) return {};
   return {
     "--ink": "#f8f8f4",
     "--ink2": "#d6d4cc",

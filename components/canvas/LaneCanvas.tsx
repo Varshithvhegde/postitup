@@ -314,7 +314,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
                       <div key={note.id}
                         draggable
                         onDragStart={e => onDragStart(e, note)}
-                        style={{ ...noteInkVars(note.color, note.text_color), background: colorBg(note.color), border: "1.5px solid #1c1c1c", boxShadow: "2px 3px 0 rgba(28,28,28,0.1)", padding: "10px 10px 8px", position: "relative", cursor: "grab", transition: "box-shadow 0.15s, transform 0.15s", userSelect: "none" }}
+                        style={{ ...noteInkVars(note.color, note.text_color, board.auto_contrast !== false), background: colorBg(note.color), border: "1.5px solid #1c1c1c", boxShadow: "2px 3px 0 rgba(28,28,28,0.1)", padding: "10px 10px 8px", position: "relative", cursor: "grab", transition: "box-shadow 0.15s, transform 0.15s", userSelect: "none" }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "3px 5px 0 rgba(28,28,28,0.14)"; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.boxShadow = "2px 3px 0 rgba(28,28,28,0.1)"; }}
                       >
@@ -405,7 +405,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
           onClick={() => setShowAdd(false)}>
           <div style={{ position: "relative", maxWidth: 400, width: "100%", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
             <span className="tape tape-y" style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 56, height: 17, borderRadius: 2, zIndex: 10 }} />
-            <div className="sk" style={{ ...noteInkVars(newColor, newTextColor), background: colorBg(newColor), padding: "28px 22px 22px" }}>
+            <div className="sk" style={{ ...noteInkVars(newColor, newTextColor, board.auto_contrast !== false), background: colorBg(newColor), padding: "28px 22px 22px" }}>
               <div className="sk-b" />
               <div className="sk-i">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -511,7 +511,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
           onClick={() => setEditNote(null)}>
           <div style={{ position: "relative", maxWidth: 400, width: "100%", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
             <span className="tape tape-b" style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 56, height: 17, borderRadius: 2, zIndex: 10 }} />
-            <div className="sk" style={{ ...noteInkVars(editColor, editTextColor), background: colorBg(editColor), padding: "28px 22px 22px" }}>
+            <div className="sk" style={{ ...noteInkVars(editColor, editTextColor, board.auto_contrast !== false), background: colorBg(editColor), padding: "28px 22px 22px" }}>
               <div className="sk-b" />
               <div className="sk-i">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>

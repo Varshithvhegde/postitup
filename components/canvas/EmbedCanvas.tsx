@@ -326,7 +326,7 @@ export default function EmbedCanvas({ board, initialNotes, initialRatings, curre
               onTouchStart={e => { if ((e.target as HTMLElement).closest("button")) return; e.stopPropagation(); const t = e.touches[0]; dragging.current = { id: note.id, type: "note", ox: note.x, oy: note.y, startX: t.clientX, startY: t.clientY, finalX: note.x, finalY: note.y }; }}
               style={{ position: "absolute", left: note.x, top: note.y, width: note.width, transform: `rotate(${note.rotation}deg)`, cursor: "grab", userSelect: "none", zIndex: 10 + note.z_index }}>
               <span className={`tape ${colorTape(note.color)}`} style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 44, height: 14, borderRadius: 2 }} />
-              <div style={{ ...noteInkVars(note.color, note.text_color), background: colorBg(note.color), border: "1.5px solid #1c1c1c", boxShadow: "2px 3px 0 rgba(28,28,28,0.1)", padding: "20px 12px 10px" }}>
+              <div style={{ ...noteInkVars(note.color, note.text_color, board.auto_contrast !== false), background: colorBg(note.color), border: "1.5px solid #1c1c1c", boxShadow: "2px 3px 0 rgba(28,28,28,0.1)", padding: "20px 12px 10px" }}>
                 <p style={{ fontSize: "0.9rem", color: "var(--ink)", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{note.content}</p>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8, paddingTop: 6, borderTop: "1px dashed rgba(28,28,28,0.18)" }}>
                   <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--ink2)" }}>— {note.author_name}</span>
@@ -351,7 +351,7 @@ export default function EmbedCanvas({ board, initialNotes, initialRatings, curre
           onClick={() => { setShowAdd(false); setReviewStars(0); setNewText(""); setAddError(""); setReviewError(""); }}>
           <div style={{ maxWidth: 360, width: "100%", position: "relative" }} onClick={e => e.stopPropagation()}>
             <span className={`tape ${colorTape(newColor)}`} style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 52, height: 16, borderRadius: 2, zIndex: 10 }} />
-            <div className="sk" style={{ ...noteInkVars(newColor, newTextColor), background: colorBg(newColor), padding: "22px 18px 18px" }}>
+            <div className="sk" style={{ ...noteInkVars(newColor, newTextColor, board.auto_contrast !== false), background: colorBg(newColor), padding: "22px 18px 18px" }}>
               <div className="sk-b" />
               <div className="sk-i">
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>

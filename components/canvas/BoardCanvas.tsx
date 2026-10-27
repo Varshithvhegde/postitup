@@ -739,7 +739,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
               <span className={`tape ${colorTape(note.color)}`}
                 style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 48, height: 15, borderRadius: 2 }} />
 
-              <div style={{ ...noteInkVars(note.color, note.text_color), background: colorBg(note.color), border: "1.5px solid #1c1c1c", boxShadow: "3px 4px 0 rgba(28,28,28,0.12)", padding: "22px 14px 12px", position: "relative" }}>
+              <div style={{ ...noteInkVars(note.color, note.text_color, board.auto_contrast !== false), background: colorBg(note.color), border: "1.5px solid #1c1c1c", boxShadow: "3px 4px 0 rgba(28,28,28,0.12)", padding: "22px 14px 12px", position: "relative" }}>
 
                 {/* Action buttons — delete + edit */}
                 <div style={{ position: "absolute", top: 5, right: 5, display: "flex", gap: 2 }}>
@@ -835,7 +835,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
           onClick={() => { setShowAddForm(false); setReviewStars(0); setNewText(""); setAddError(""); setReviewError(""); }}>
           <div style={{ position: "relative", maxWidth: 390, width: "100%" }} onClick={e => e.stopPropagation()}>
             <span className={`tape ${colorTape(newColor)}`} style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 56, height: 17, borderRadius: 2, zIndex: 10 }} />
-            <div className="sk" style={{ ...noteInkVars(newColor, newTextColor), background: colorBg(newColor), padding: "28px 24px 22px" }}>
+            <div className="sk" style={{ ...noteInkVars(newColor, newTextColor, board.auto_contrast !== false), background: colorBg(newColor), padding: "28px 24px 22px" }}>
               <div className="sk-b" />
               <div className="sk-i">
 
