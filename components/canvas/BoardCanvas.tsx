@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { noteInkVars } from "@/lib/noteColor";
 import type { Board, Note, NoteColor, Rating } from "@/types";
 import { sanitizeText, validateNoteContent, validateAuthorName, LIMITS } from "@/lib/sanitize";
 import {
@@ -696,7 +697,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
                       onKeyDown={e => { if (e.key === "Enter" && e.metaKey) { e.preventDefault(); saveRatingEdit(r.id); } if (e.key === "Escape") setEditingRatingId(null); }}
                       placeholder="Add a review…"
                       rows={3}
-                      style={{ width: "100%", background: "rgba(255,255,255,0.5)", border: "1.5px solid var(--ink)", fontFamily: "var(--font-kalam), serif", fontSize: "0.95rem", fontWeight: 700, color: "var(--ink)", lineHeight: 1.6, resize: "none", outline: "none", padding: 4 }}
+                      style={{ width: "100%", background: "rgba(255,255,255,0.5)", border: "1.5px solid var(--ink)", fontFamily: "var(--font-kalam), serif", fontSize: "0.95rem", fontWeight: 700, color: "#1c1c1c", lineHeight: 1.6, resize: "none", outline: "none", padding: 4 }}
                     />
                     <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.68rem", color: "var(--ink3)", marginTop: 4 }}>⌘+Enter to save · Esc to cancel</p>
                   </>
@@ -735,7 +736,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
               <span className={`tape ${colorTape(note.color)}`}
                 style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 48, height: 15, borderRadius: 2 }} />
 
-              <div style={{ background: colorBg(note.color), border: "1.5px solid var(--ink)", boxShadow: "3px 4px 0 rgba(28,28,28,0.12)", padding: "22px 14px 12px", position: "relative" }}>
+              <div style={{ ...noteInkVars(note.color), background: colorBg(note.color), border: "1.5px solid #1c1c1c", boxShadow: "3px 4px 0 rgba(28,28,28,0.12)", padding: "22px 14px 12px", position: "relative" }}>
 
                 {/* Action buttons — delete + edit */}
                 <div style={{ position: "absolute", top: 5, right: 5, display: "flex", gap: 2 }}>
@@ -765,7 +766,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
                     onChange={e => setEditText(e.target.value.slice(0, LIMITS.noteContent.max))}
                     onBlur={() => saveEdit(note.id)}
                     onKeyDown={e => { if (e.key === "Enter" && e.metaKey) { e.preventDefault(); saveEdit(note.id); } if (e.key === "Escape") { setEditingId(null); } }}
-                    style={{ width: "100%", background: "rgba(255,255,255,0.5)", border: "1.5px solid var(--ink)", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", fontWeight: 700, color: "var(--ink)", lineHeight: 1.6, resize: "none", outline: "none", padding: 4, minHeight: 60 }}
+                    style={{ width: "100%", background: "rgba(255,255,255,0.5)", border: "1.5px solid #1c1c1c", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", fontWeight: 700, color: "#1c1c1c", lineHeight: 1.6, resize: "none", outline: "none", padding: 4, minHeight: 60 }}
                     rows={3}
                   />
                 ) : (
@@ -831,7 +832,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
           onClick={() => { setShowAddForm(false); setReviewStars(0); setNewText(""); setAddError(""); setReviewError(""); }}>
           <div style={{ position: "relative", maxWidth: 390, width: "100%" }} onClick={e => e.stopPropagation()}>
             <span className={`tape ${colorTape(newColor)}`} style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 56, height: 17, borderRadius: 2, zIndex: 10 }} />
-            <div className="sk" style={{ background: colorBg(newColor), padding: "28px 24px 22px" }}>
+            <div className="sk" style={{ ...noteInkVars(newColor), background: colorBg(newColor), padding: "28px 24px 22px" }}>
               <div className="sk-b" />
               <div className="sk-i">
 
@@ -847,7 +848,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
                 {/* Author name */}
                 <input value={authorName} onChange={e => setAuthorName(e.target.value.slice(0, LIMITS.authorName.max))}
                   placeholder="Your name (optional)"
-                  style={{ width: "100%", padding: "7px 10px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink)", outline: "none", marginBottom: 10 }} />
+                  style={{ width: "100%", padding: "7px 10px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "#1c1c1c", outline: "none", marginBottom: 10 }} />
 
                 {/* Note text */}
                 <div style={{ position: "relative", marginBottom: 10 }}>
@@ -855,7 +856,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
                     onChange={e => { setAddError(""); setNewText(e.target.value.slice(0, LIMITS.noteContent.max)); }}
                     onKeyDown={e => { if (e.key === "Enter" && e.metaKey) reviewStars > 0 ? submitReview() : addNote(); }}
                     placeholder="Write your note…" rows={3}
-                    style={{ width: "100%", padding: "10px", border: `1.5px solid ${newText.length >= LIMITS.noteContent.max ? "#ef4444" : "rgba(28,28,28,0.2)"}`, background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink)", outline: "none", resize: "vertical" }}
+                    style={{ width: "100%", padding: "10px", border: `1.5px solid ${newText.length >= LIMITS.noteContent.max ? "#ef4444" : "rgba(28,28,28,0.2)"}`, background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "#1c1c1c", outline: "none", resize: "vertical" }}
                   />
                   <span style={{ position: "absolute", bottom: 6, right: 8, fontFamily: "var(--font-kalam), serif", fontSize: "0.7rem", color: newText.length >= LIMITS.noteContent.max ? "#ef4444" : "var(--ink3)" }}>
                     {newText.length}/{LIMITS.noteContent.max}

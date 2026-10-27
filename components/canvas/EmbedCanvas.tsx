@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { noteInkVars } from "@/lib/noteColor";
 import type { Board, Note, NoteColor, Rating } from "@/types";
 import { sanitizeText, validateNoteContent, validateAuthorName, LIMITS } from "@/lib/sanitize";
 import { Plus, X, ThumbsUp, Trash2, Star } from "lucide-react";
@@ -323,7 +324,7 @@ export default function EmbedCanvas({ board, initialNotes, initialRatings, curre
               onTouchStart={e => { if ((e.target as HTMLElement).closest("button")) return; e.stopPropagation(); const t = e.touches[0]; dragging.current = { id: note.id, type: "note", ox: note.x, oy: note.y, startX: t.clientX, startY: t.clientY, finalX: note.x, finalY: note.y }; }}
               style={{ position: "absolute", left: note.x, top: note.y, width: note.width, transform: `rotate(${note.rotation}deg)`, cursor: "grab", userSelect: "none", zIndex: 10 + note.z_index }}>
               <span className={`tape ${colorTape(note.color)}`} style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 44, height: 14, borderRadius: 2 }} />
-              <div style={{ background: colorBg(note.color), border: "1.5px solid var(--ink)", boxShadow: "2px 3px 0 rgba(28,28,28,0.1)", padding: "20px 12px 10px" }}>
+              <div style={{ ...noteInkVars(note.color), background: colorBg(note.color), border: "1.5px solid #1c1c1c", boxShadow: "2px 3px 0 rgba(28,28,28,0.1)", padding: "20px 12px 10px" }}>
                 <p style={{ fontSize: "0.9rem", color: "var(--ink)", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{note.content}</p>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8, paddingTop: 6, borderTop: "1px dashed rgba(28,28,28,0.18)" }}>
                   <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--ink2)" }}>— {note.author_name}</span>
@@ -348,7 +349,7 @@ export default function EmbedCanvas({ board, initialNotes, initialRatings, curre
           onClick={() => { setShowAdd(false); setReviewStars(0); setNewText(""); setAddError(""); setReviewError(""); }}>
           <div style={{ maxWidth: 360, width: "100%", position: "relative" }} onClick={e => e.stopPropagation()}>
             <span className={`tape ${colorTape(newColor)}`} style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 52, height: 16, borderRadius: 2, zIndex: 10 }} />
-            <div className="sk" style={{ background: colorBg(newColor), padding: "22px 18px 18px" }}>
+            <div className="sk" style={{ ...noteInkVars(newColor), background: colorBg(newColor), padding: "22px 18px 18px" }}>
               <div className="sk-b" />
               <div className="sk-i">
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
@@ -359,7 +360,7 @@ export default function EmbedCanvas({ board, initialNotes, initialRatings, curre
                 {/* Name */}
                 <input value={authorName} onChange={e => setAuthorName(e.target.value.slice(0, LIMITS.authorName.max))}
                   placeholder="Your name (optional)"
-                  style={{ width: "100%", padding: "6px 9px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontSize: "0.88rem", fontFamily: "inherit", color: "var(--ink)", outline: "none", marginBottom: 8 }} />
+                  style={{ width: "100%", padding: "6px 9px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontSize: "0.88rem", fontFamily: "inherit", color: "#1c1c1c", outline: "none", marginBottom: 8 }} />
 
                 {/* Text */}
                 <div style={{ position: "relative", marginBottom: 8 }}>
@@ -367,7 +368,7 @@ export default function EmbedCanvas({ board, initialNotes, initialRatings, curre
                     onChange={e => { setAddError(""); setNewText(e.target.value.slice(0, LIMITS.noteContent.max)); }}
                     onKeyDown={e => { if (e.key === "Enter" && e.metaKey) reviewStars > 0 ? submitReview() : addNote(); }}
                     placeholder="Write your note…" rows={3}
-                    style={{ width: "100%", padding: "8px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontSize: "0.95rem", fontFamily: "inherit", color: "var(--ink)", outline: "none", resize: "none" }} />
+                    style={{ width: "100%", padding: "8px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontSize: "0.95rem", fontFamily: "inherit", color: "#1c1c1c", outline: "none", resize: "none" }} />
                   <span style={{ position: "absolute", bottom: 5, right: 7, fontSize: "0.68rem", color: "var(--ink3)" }}>{newText.length}/{LIMITS.noteContent.max}</span>
                 </div>
 

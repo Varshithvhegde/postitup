@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { noteInkVars } from "@/lib/noteColor";
 import type { Board, Note, NoteColor, Lane } from "@/types";
 import { sanitizeText, validateNoteContent, validateAuthorName, LIMITS } from "@/lib/sanitize";
 import { Plus, X, Trash2, ThumbsUp, ChevronLeft, Copy, Check, Settings, Pencil, ChevronRight, ChevronLeft as ChevLeft } from "lucide-react";
@@ -308,7 +309,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
                       <div key={note.id}
                         draggable
                         onDragStart={e => onDragStart(e, note)}
-                        style={{ background: colorBg(note.color), border: "1.5px solid var(--ink)", boxShadow: "2px 3px 0 rgba(28,28,28,0.1)", padding: "10px 10px 8px", position: "relative", cursor: "grab", transition: "box-shadow 0.15s, transform 0.15s", userSelect: "none" }}
+                        style={{ ...noteInkVars(note.color), background: colorBg(note.color), border: "1.5px solid #1c1c1c", boxShadow: "2px 3px 0 rgba(28,28,28,0.1)", padding: "10px 10px 8px", position: "relative", cursor: "grab", transition: "box-shadow 0.15s, transform 0.15s", userSelect: "none" }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "3px 5px 0 rgba(28,28,28,0.14)"; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.boxShadow = "2px 3px 0 rgba(28,28,28,0.1)"; }}
                       >
@@ -399,7 +400,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
           onClick={() => setShowAdd(false)}>
           <div style={{ position: "relative", maxWidth: 400, width: "100%", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
             <span className="tape tape-y" style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 56, height: 17, borderRadius: 2, zIndex: 10 }} />
-            <div className="sk" style={{ background: colorBg(newColor), padding: "28px 22px 22px" }}>
+            <div className="sk" style={{ ...noteInkVars(newColor), background: colorBg(newColor), padding: "28px 22px 22px" }}>
               <div className="sk-b" />
               <div className="sk-i">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -423,7 +424,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
                 {/* Author */}
                 <input value={authorName} onChange={e => setAuthorName(e.target.value.slice(0, LIMITS.authorName.max))}
                   placeholder="Your name (optional)"
-                  style={{ width: "100%", padding: "7px 10px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink)", outline: "none", marginBottom: 10 }} />
+                  style={{ width: "100%", padding: "7px 10px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "#1c1c1c", outline: "none", marginBottom: 10 }} />
 
                 {/* Content */}
                 <div style={{ position: "relative", marginBottom: 10 }}>
@@ -431,7 +432,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
                     onChange={e => { setAddError(""); setNewText(e.target.value.slice(0, LIMITS.noteContent.max)); }}
                     onKeyDown={e => { if (e.key === "Enter" && e.metaKey) addNote(); }}
                     placeholder="What needs to be done?" rows={3}
-                    style={{ width: "100%", padding: "10px", border: `1.5px solid ${newText.length >= LIMITS.noteContent.max ? "#ef4444" : "rgba(28,28,28,0.2)"}`, background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink)", outline: "none", resize: "vertical" }}
+                    style={{ width: "100%", padding: "10px", border: `1.5px solid ${newText.length >= LIMITS.noteContent.max ? "#ef4444" : "rgba(28,28,28,0.2)"}`, background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "#1c1c1c", outline: "none", resize: "vertical" }}
                   />
                   <span style={{ position: "absolute", bottom: 6, right: 8, fontFamily: "var(--font-kalam), serif", fontSize: "0.7rem", color: "var(--ink3)" }}>{newText.length}/{LIMITS.noteContent.max}</span>
                 </div>
@@ -453,7 +454,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
                 <div style={{ marginBottom: 14 }}>
                   <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: "var(--ink3)", marginBottom: 6 }}>Due date (optional)</p>
                   <input type="date" value={newDueDate} onChange={e => setNewDueDate(e.target.value)}
-                    style={{ width: "100%", padding: "7px 10px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink)", outline: "none" }} />
+                    style={{ width: "100%", padding: "7px 10px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "#1c1c1c", outline: "none" }} />
                 </div>
 
                 {/* Color */}
@@ -500,7 +501,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
           onClick={() => setEditNote(null)}>
           <div style={{ position: "relative", maxWidth: 400, width: "100%", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
             <span className="tape tape-b" style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 56, height: 17, borderRadius: 2, zIndex: 10 }} />
-            <div className="sk" style={{ background: colorBg(editColor), padding: "28px 22px 22px" }}>
+            <div className="sk" style={{ ...noteInkVars(editColor), background: colorBg(editColor), padding: "28px 22px 22px" }}>
               <div className="sk-b" />
               <div className="sk-i">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -514,7 +515,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
                     onChange={e => setEditText(e.target.value.slice(0, LIMITS.noteContent.max))}
                     onKeyDown={e => { if (e.key === "Enter" && e.metaKey) saveEdit(); }}
                     placeholder="Card content" rows={3}
-                    style={{ width: "100%", padding: "10px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "var(--ink)", outline: "none", resize: "vertical" }}
+                    style={{ width: "100%", padding: "10px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "1rem", color: "#1c1c1c", outline: "none", resize: "vertical" }}
                   />
                   <span style={{ position: "absolute", bottom: 6, right: 8, fontFamily: "var(--font-kalam), serif", fontSize: "0.7rem", color: "var(--ink3)" }}>{editText.length}/{LIMITS.noteContent.max}</span>
                 </div>
@@ -543,7 +544,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
                   <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: "var(--ink3)", marginBottom: 6 }}>Due date</p>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <input type="date" value={editDueDate} onChange={e => setEditDueDate(e.target.value)}
-                      style={{ flex: 1, padding: "7px 10px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "var(--ink)", outline: "none" }} />
+                      style={{ flex: 1, padding: "7px 10px", border: "1.5px solid rgba(28,28,28,0.2)", background: "rgba(255,255,255,0.6)", fontFamily: "var(--font-kalam), serif", fontSize: "0.9rem", color: "#1c1c1c", outline: "none" }} />
                     {editDueDate && (
                       <button onClick={() => setEditDueDate("")}
                         style={{ padding: "7px 10px", background: "white", border: "1.5px solid rgba(28,28,28,0.2)", cursor: "pointer", fontFamily: "var(--font-kalam), serif", fontSize: "0.8rem", color: "var(--ink3)" }}>
