@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { noteInkVars } from "@/lib/noteColor";
+import TextColorPicker from "./TextColorPicker";
 import type { Board, Note, NoteColor, Rating } from "@/types";
 import { sanitizeText, validateNoteContent, validateAuthorName, LIMITS } from "@/lib/sanitize";
 import {
@@ -90,6 +91,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
   const [addPos, setAddPos] = useState({ x: 100, y: 100 });
   const [newText, setNewText] = useState("");
   const [newColor, setNewColor] = useState<NoteColor>("yellow");
+  const [newTextColor, setNewTextColor] = useState<string | null>(null);
   const [authorName, setAuthorName] = useState(() => typeof window !== "undefined" ? localStorage.getItem("piu_name") ?? "" : "");
 
   /* ── Dragging notes or rating cards ── */
@@ -385,6 +387,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
       board_id:    board.id,
       content:     cleanContent,
       color:       newColor,
+      text_color:  newTextColor,
       x:           addPos.x,
       y:           addPos.y,
       width:       200,
@@ -393,7 +396,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
       user_id:     currentUser?.id ?? null,
     });
     if (error) { setAddError("Failed to save note. Try again."); return; }
-    setNewText("");
+    setNewText(""); setNewTextColor(null);
     setShowAddForm(false);
   };
 
@@ -736,7 +739,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
               <span className={`tape ${colorTape(note.color)}`}
                 style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 48, height: 15, borderRadius: 2 }} />
 
-              <div style={{ ...noteInkVars(note.color), background: colorBg(note.color), border: "1.5px solid #1c1c1c", boxShadow: "3px 4px 0 rgba(28,28,28,0.12)", padding: "22px 14px 12px", position: "relative" }}>
+              <div style={{ ...noteInkVars(note.color, note.text_color), background: colorBg(note.color), border: "1.5px solid #1c1c1c", boxShadow: "3px 4px 0 rgba(28,28,28,0.12)", padding: "22px 14px 12px", position: "relative" }}>
 
                 {/* Action buttons — delete + edit */}
                 <div style={{ position: "absolute", top: 5, right: 5, display: "flex", gap: 2 }}>
@@ -832,7 +835,7 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
           onClick={() => { setShowAddForm(false); setReviewStars(0); setNewText(""); setAddError(""); setReviewError(""); }}>
           <div style={{ position: "relative", maxWidth: 390, width: "100%" }} onClick={e => e.stopPropagation()}>
             <span className={`tape ${colorTape(newColor)}`} style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 56, height: 17, borderRadius: 2, zIndex: 10 }} />
-            <div className="sk" style={{ ...noteInkVars(newColor), background: colorBg(newColor), padding: "28px 24px 22px" }}>
+            <div className="sk" style={{ ...noteInkVars(newColor, newTextColor), background: colorBg(newColor), padding: "28px 24px 22px" }}>
               <div className="sk-b" />
               <div className="sk-i">
 
@@ -882,6 +885,11 @@ export default function BoardCanvas({ board, initialNotes, initialRatings, curre
                         style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }} />
                     </label>
                   </div>
+                </div>
+
+                <div style={{ marginBottom: 14 }}>
+                  <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: "var(--ink3)", marginBottom: 6 }}>Text color</p>
+                  <TextColorPicker value={newTextColor} onChange={setNewTextColor} />
                 </div>
 
                 {/* Star rating — only when board has ratings enabled */}

@@ -23,8 +23,17 @@ export function isDarkColor(c: string): boolean {
   return l !== null && l < 0.4;
 }
 
-/** Overrides the ink CSS variables so text on dark notes turns light. */
-export function noteInkVars(c: string): CSSProperties {
+const HEX6 = /^#[0-9a-fA-F]{6}$/;
+
+/** Overrides the ink CSS variables: a custom text color wins, otherwise light text on dark notes. */
+export function noteInkVars(c: string, textColor?: string | null): CSSProperties {
+  if (textColor && HEX6.test(textColor)) {
+    return {
+      "--ink": textColor,
+      "--ink2": `color-mix(in srgb, ${textColor} 80%, transparent)`,
+      "--ink3": `color-mix(in srgb, ${textColor} 60%, transparent)`,
+    } as CSSProperties;
+  }
   if (!isDarkColor(c)) return {};
   return {
     "--ink": "#f8f8f4",

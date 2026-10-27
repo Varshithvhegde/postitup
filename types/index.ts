@@ -38,6 +38,7 @@ export interface Note {
   board_id: string;
   content: string;
   color: NoteColor;
+  text_color: string | null;
   x: number;
   y: number;
   width: number;

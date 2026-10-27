@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { noteInkVars } from "@/lib/noteColor";
+import TextColorPicker from "./TextColorPicker";
 import type { Board, Note, NoteColor, Lane } from "@/types";
 import { sanitizeText, validateNoteContent, validateAuthorName, LIMITS } from "@/lib/sanitize";
 import { Plus, X, Trash2, ThumbsUp, ChevronLeft, Copy, Check, Settings, Pencil, ChevronRight, ChevronLeft as ChevLeft } from "lucide-react";
@@ -59,6 +60,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
   const [addLane, setAddLane]       = useState("todo");
   const [newText, setNewText]       = useState("");
   const [newColor, setNewColor]     = useState<NoteColor>("#fef9c3");
+  const [newTextColor, setNewTextColor] = useState<string | null>(null);
   const [newPriority, setNewPriority] = useState<"high"|"medium"|"low"|"">("");
   const [newDueDate, setNewDueDate] = useState("");
   const [authorName, setAuthorName] = useState(() => typeof window !== "undefined" ? localStorage.getItem("piu_name") ?? "" : "");
@@ -69,6 +71,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
   const [editNote, setEditNote]     = useState<Note | null>(null);
   const [editText, setEditText]     = useState("");
   const [editColor, setEditColor]   = useState<NoteColor>("#fef9c3");
+  const [editTextColor, setEditTextColor] = useState<string | null>(null);
   const [editPriority, setEditPriority] = useState<"high"|"medium"|"low"|"">("");
   const [editDueDate, setEditDueDate]   = useState("");
   const [editSaving, setEditSaving]     = useState(false);
@@ -100,7 +103,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
     localStorage.setItem("piu_name", name);
     const laneNotes = notes.filter(n => n.lane_id === addLane);
     const { error } = await supabase.from("notes").insert({
-      board_id: board.id, content: clean, color: newColor,
+      board_id: board.id, content: clean, color: newColor, text_color: newTextColor,
       x: 0, y: 0, width: 220, rotation: 0,
       author_name: name, user_id: currentUser?.id ?? null,
       lane_id: addLane, lane_order: laneNotes.length,
@@ -109,7 +112,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
     });
     setSaving(false);
     if (error) { setAddError("Failed to save. Try again."); return; }
-    setNewText(""); setNewDueDate(""); setNewPriority(""); setShowAdd(false);
+    setNewText(""); setNewTextColor(null); setNewDueDate(""); setNewPriority(""); setShowAdd(false);
   };
 
   const deleteNote = async (id: string) => {
@@ -121,6 +124,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
     setEditNote(note);
     setEditText(note.content);
     setEditColor(note.color);
+    setEditTextColor(note.text_color ?? null);
     setEditPriority((note.priority as "high"|"medium"|"low"|"") ?? "");
     setEditDueDate(note.due_date ?? "");
   };
@@ -133,6 +137,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
     const update = {
       content:  clean,
       color:    editColor,
+      text_color: editTextColor,
       priority: editPriority || null,
       due_date: editDueDate || null,
     };
@@ -309,7 +314,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
                       <div key={note.id}
                         draggable
                         onDragStart={e => onDragStart(e, note)}
-                        style={{ ...noteInkVars(note.color), background: colorBg(note.color), border: "1.5px solid #1c1c1c", boxShadow: "2px 3px 0 rgba(28,28,28,0.1)", padding: "10px 10px 8px", position: "relative", cursor: "grab", transition: "box-shadow 0.15s, transform 0.15s", userSelect: "none" }}
+                        style={{ ...noteInkVars(note.color, note.text_color), background: colorBg(note.color), border: "1.5px solid #1c1c1c", boxShadow: "2px 3px 0 rgba(28,28,28,0.1)", padding: "10px 10px 8px", position: "relative", cursor: "grab", transition: "box-shadow 0.15s, transform 0.15s", userSelect: "none" }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "3px 5px 0 rgba(28,28,28,0.14)"; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.boxShadow = "2px 3px 0 rgba(28,28,28,0.1)"; }}
                       >
@@ -400,7 +405,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
           onClick={() => setShowAdd(false)}>
           <div style={{ position: "relative", maxWidth: 400, width: "100%", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
             <span className="tape tape-y" style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 56, height: 17, borderRadius: 2, zIndex: 10 }} />
-            <div className="sk" style={{ ...noteInkVars(newColor), background: colorBg(newColor), padding: "28px 22px 22px" }}>
+            <div className="sk" style={{ ...noteInkVars(newColor, newTextColor), background: colorBg(newColor), padding: "28px 22px 22px" }}>
               <div className="sk-b" />
               <div className="sk-i">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -476,6 +481,11 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
                   </div>
                 </div>
 
+                <div style={{ marginBottom: 14 }}>
+                  <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: "var(--ink3)", marginBottom: 6 }}>Text color</p>
+                  <TextColorPicker value={newTextColor} onChange={setNewTextColor} size={22} />
+                </div>
+
                 {addError && <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.85rem", color: "#ef4444", marginBottom: 10 }}>{addError}</p>}
 
                 <div style={{ display: "flex", gap: 10 }}>
@@ -501,7 +511,7 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
           onClick={() => setEditNote(null)}>
           <div style={{ position: "relative", maxWidth: 400, width: "100%", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
             <span className="tape tape-b" style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%) rotate(-2deg)", width: 56, height: 17, borderRadius: 2, zIndex: 10 }} />
-            <div className="sk" style={{ ...noteInkVars(editColor), background: colorBg(editColor), padding: "28px 22px 22px" }}>
+            <div className="sk" style={{ ...noteInkVars(editColor, editTextColor), background: colorBg(editColor), padding: "28px 22px 22px" }}>
               <div className="sk-b" />
               <div className="sk-i">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -571,6 +581,11 @@ export default function LaneCanvas({ board, initialNotes, currentUser, isOwner }
                         style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }} />
                     </label>
                   </div>
+                </div>
+
+                <div style={{ marginBottom: 18 }}>
+                  <p style={{ fontFamily: "var(--font-kalam), serif", fontSize: "0.78rem", color: "var(--ink3)", marginBottom: 6 }}>Text color</p>
+                  <TextColorPicker value={editTextColor} onChange={setEditTextColor} size={22} />
                 </div>
 
                 <div style={{ display: "flex", gap: 10 }}>
